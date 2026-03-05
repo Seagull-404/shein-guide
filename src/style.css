@@ -1,0 +1,32 @@
+:root {
+    --primary-color: #ff5000;
+    --bg-color: #f8f9fa;
+    --text-main: #333;
+    --step-bg: #ffffff;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 20px 10px;
+    min-height: 100vh;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+h1 {
+    color: #222;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
