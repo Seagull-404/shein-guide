@@ -7,11 +7,6 @@ const showMaterialsModal = ref(false)
 const materialsStep = ref(1)
 const currentStep = ref(1)
 
-const zhanfuClicked = ref(false)
-const sheinClicked = ref(false)
-
-const canGoNextStep = computed(() => zhanfuClicked.value && sheinClicked.value)
-
 const materials = ref([
   { id: 1, text: "身份证：法人/负责人身份证正反面照片（清晰无遮挡）", checked: false },
   { id: 2, text: "营业执照：最新年检合格的营业执照电子版或扫描件", checked: false },
@@ -25,17 +20,13 @@ const materialsProgress = computed(() => {
 
 const goToMaterials = () => { showMaterialsModal.value = true }
 const closeMaterials = () => { showMaterialsModal.value = false }
-const nextStep = () => { materialsStep.value = 2 }
-const nextStepDone = () => { 
+const nextStep = () => { 
   showMaterialsModal.value = false
   materialsStep.value = 1
   showHero.value = false
   showTutorial.value = true
   window.history.pushState({ page: 'tutorial', step: 1 }, '', '#step1')
 }
-
-const onZhanfuClick = () => { zhanfuClicked.value = true }
-const onSheinClick = () => { sheinClicked.value = true }
 
 const goToStep = (step) => {
   currentStep.value = step
@@ -110,10 +101,7 @@ const downloadForEdge = () => {
           <div class="feature-text">工具下载指引</div>
         </div>
       </div>
-      <button class="primary-btn hero-btn" @click="goToMaterials">
-        <span>立即开始</span>
-        <svg class="btn-arrow" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"/></svg>
-      </button>
+      <button class="primary-btn hero-btn" @click="goToMaterials">我要开店</button>
     </div>
   </div>
   <div v-if="showTutorial" class="tutorial-section">
@@ -130,25 +118,15 @@ const downloadForEdge = () => {
             <p>视频教程准备中...</p>
             <p class="placeholder-hint">即将上线</p>
           </div>
-          <div class="action-links">
-            <div class="action-item">
-              <a href="https://www.zhanfubrowser.com/register/?code=3262" target="_blank" class="primary-btn" @click="onZhanfuClick">
-                注册战斧账号
-              </a>
-              <span v-if="zhanfuClicked" class="status-badge done">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                已完成
-              </span>
-            </div>
-            <div class="action-item">
-              <a href="https://sbn-prod01.sheincorp.cn/" target="_blank" class="primary-btn dark" @click="onSheinClick">
-                SHEIN 商家注册
-              </a>
-              <span v-if="sheinClicked" class="status-badge done">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                已完成
-              </span>
-            </div>
+          <div class="reg-links">
+            <a href="https://www.zhanfubrowser.com/register/?code=3262" target="_blank" class="reg-link">
+              <img src="/zf-logo.svg" alt="战斧浏览器" class="reg-logo zhanfu" />
+              <span class="reg-text">注册</span>
+            </a>
+            <a href="https://sbn-prod01.sheincorp.cn/" target="_blank" class="reg-link">
+              <img src="/shein-s.svg" alt="SHEIN" class="reg-logo shein" />
+              <span class="reg-text">SHEIN商家注册</span>
+            </a>
           </div>
         </div>
       </div>
@@ -171,6 +149,16 @@ const downloadForEdge = () => {
             <p>视频教程准备中...</p>
             <p class="placeholder-hint">即将上线</p>
           </div>
+          <div class="info-box">
+            <h4>示例地址信息</h4>
+             <div class="info-item"><span class="info-label">仓库：</span>纽约美东仓库</div>
+            <div class="info-item"><span class="info-label">姓名：</span>JOHN LEAVY</div>
+            <div class="info-item"><span class="info-label">邮编：</span>11413</div>
+            <div class="info-item"><span class="info-label">手机：</span>（+1）123456789</div>
+            <div class="info-item"><span class="info-label">省份：</span>NY(NEW YORK)</div>
+            <div class="info-item"><span class="info-label">城市：</span>JAMAICA</div>
+            <div class="info-item"><span class="info-label">地址：</span>133-11 FRANCLS LEWIS BLVD</div>
+          </div>
         </div>
       </div>
       <div class="step-nav-buttons">
@@ -191,25 +179,25 @@ const downloadForEdge = () => {
             <p>视频教程准备中...</p>
             <p class="placeholder-hint">即将上线</p>
           </div>
-          <div class="miaoshou-download">
-            <div class="logo-links">
-              <a href="https://erp.91miaoshou.com/" target="_blank" class="miaoshou-logo-link">
-                <img src="/妙手logo.jpg" alt="妙手ERP" class="miaoshou-logo" />
-              </a>
-              <a href="https://us.shein.com/" target="_blank" class="shein-logo-link">
-                <img src="/shein-s.svg" alt="SHEIN" class="shein-logo" />
-              </a>
-            </div>
-            <div class="browser-btns">
-              <a href="chrome://extensions/" class="browser-btn" @click="downloadForChrome">
-                <img src="/chrome-logo-m100.svg" alt="Chrome" class="browser-logo" />
-                <span class="browser-label">Chrome版下载</span>
-              </a>
-              <a href="edge://extensions/" class="browser-btn" @click="downloadForEdge">
-                <img src="/edge-logo.jpg" alt="Edge" class="browser-logo" />
-                <span class="browser-label">Edge版下载</span>
-              </a>
-            </div>
+          <div class="reg-links">
+            <a href="https://erp.91miaoshou.com/" target="_blank" class="reg-link">
+              <img src="/妙手logo.jpg" alt="妙手ERP" class="reg-logo miaoshou" />
+              <span class="reg-text">妙手ERP</span>
+            </a>
+            <a href="https://us.shein.com/" target="_blank" class="reg-link">
+              <img src="/shein-s.svg" alt="SHEIN" class="reg-logo shein" />
+              <span class="reg-text">SHEIN官网</span>
+            </a>
+          </div>
+          <div class="browser-btns">
+            <a href="chrome://extensions/" class="browser-btn" @click="downloadForChrome">
+              <img src="/chrome-logo-m100.svg" alt="Chrome" class="browser-logo" />
+              <span class="browser-label">Chrome版下载</span>
+            </a>
+            <a href="edge://extensions/" class="browser-btn" @click="downloadForEdge">
+              <img src="/edge-logo.jpg" alt="Edge" class="browser-logo" />
+              <span class="browser-label">Edge版下载</span>
+            </a>
           </div>
         </div>
       </div>
@@ -234,11 +222,7 @@ const downloadForEdge = () => {
         </div>
         <div class="modal-footer"><button class="primary-btn" @click="nextStep">下一步</button></div>
       </div>
-      <div v-if="materialsStep === 2">
-        <div class="modal-header"><h2>已下载战斧浏览器</h2></div>
-        <p class="modal-desc">请在新打开的标签页中完成下载与安装，完成后点击下方按钮继续。</p>
-        <div class="modal-footer"><button class="primary-btn" @click="nextStepDone">下一步</button></div>
-      </div>
+
     </div>
   </div>
 </template>
@@ -254,8 +238,7 @@ const downloadForEdge = () => {
 .feature-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .feature-icon { font-size: 32px; }
 .feature-text { font-size: 14px; color: #475569; font-weight: 500; }
-.hero-btn { padding: 16px 48px; font-size: 18px; display: inline-flex; align-items: center; }
-.btn-arrow { margin-left: 8px; }
+.hero-btn { padding: 16px 48px; font-size: 18px; text-align: center; }
 @media (max-width: 600px) { .hero-container { padding: 32px 24px; } .hero-title { font-size: 24px; } .hero-features { gap: 20px; } }
 .hero { max-width: 1100px; width: 100%; margin-bottom: 30px; text-align: center; }
 .primary-btn { background: var(--primary-color); color: #fff; border: none; border-radius: 999px; padding: 12px 32px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25); transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease; text-decoration: none; display: inline-block; }
@@ -288,13 +271,21 @@ const downloadForEdge = () => {
 .miaoshou-logo-link:hover { transform: scale(1.05); }
 .miaoshou-logo-link:hover .miaoshou-logo { box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3); }
 .miaoshou-logo { width: 150px; height: 40px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: box-shadow 0.2s ease; }
-.shein-logo-link { display: inline-block; border-radius: 8px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.shein-logo-link:hover { transform: scale(1.05); }
-.shein-logo-link:hover .shein-logo { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
-.shein-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: contain; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: box-shadow 0.2s ease; }
+.reg-links { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; margin-top: 24px; padding-left: 8px; }
+.reg-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; text-decoration: none; }
+.reg-link:hover { transform: translateX(4px); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); }
+.reg-logo { border-radius: 8px; object-fit: contain; }
+.reg-logo.zhanfu { width: 140px; height: 50px; }
+.reg-logo.shein { width: 50px; height: 50px; }
+.reg-logo.miaoshou { width: 140px; height: 50px; }
+.reg-text { font-size: 15px; font-weight: 500; color: var(--text-main); }
+.info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-top: 20px; }
+.info-box h4 { margin: 0 0 12px; font-size: 16px; color: var(--text-main); border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+.info-item { font-size: 14px; color: #475569; line-height: 1.8; }
+.info-label { font-weight: 600; color: var(--text-main); }
 .miaoshou-btn { background: linear-gradient(135deg, #1e293b, #334155); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); }
 .miaoshou-btn:hover { box-shadow: 0 12px 22px rgba(0, 0, 0, 0.35); }
-.browser-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.browser-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: flex-start; padding-left: 8px; margin-top: 16px; }
 .browser-btn { background: #fff; border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; }
 .browser-btn:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
 .browser-logo { width: 40px; height: 40px; border-radius: 4px; object-fit: contain; display: block; }
