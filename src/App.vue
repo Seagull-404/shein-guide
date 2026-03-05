@@ -25,7 +25,7 @@ const materialsProgress = computed(() => {
 
 const goToMaterials = () => { showMaterialsModal.value = true }
 const closeMaterials = () => { showMaterialsModal.value = false }
-const nextStep = () => { window.open('https://www.zhanfubrowser.com/download?code=3262', '_blank'); materialsStep.value = 2 }
+const nextStep = () => { materialsStep.value = 2 }
 const nextStepDone = () => { 
   showMaterialsModal.value = false
   materialsStep.value = 1
