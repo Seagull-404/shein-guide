@@ -211,23 +211,23 @@ const downloadForEdge = () => {
 </template>
 
 <style scoped>
-.hero-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #fff5f0 0%, #ffe8dc 100%); padding: 20px; }
-.hero-container { max-width: 600px; width: 100%; text-align: center; background: #fff; border-radius: 24px; padding: 48px 40px; box-shadow: 0 20px 60px rgba(255, 80, 0, 0.15); }
+.hero-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f7ff 0%, #e0efff 100%); padding: 20px; }
+.hero-container { max-width: 600px; width: 100%; text-align: center; background: #fff; border-radius: 24px; padding: 48px 40px; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.12); }
 .company-brand { margin-bottom: 24px; }
-.company-logo { width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+.company-logo { width: 200px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
 .hero-title { font-size: 32px; font-weight: 700; color: var(--text-main); margin: 0 0 12px; }
-.hero-subtitle { font-size: 16px; color: #666; margin: 0 0 32px; }
+.hero-subtitle { font-size: 16px; color: #64748b; margin: 0 0 32px; }
 .hero-features { display: flex; justify-content: center; gap: 32px; margin-bottom: 40px; flex-wrap: wrap; }
 .feature-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .feature-icon { font-size: 32px; }
-.feature-text { font-size: 14px; color: #555; font-weight: 500; }
+.feature-text { font-size: 14px; color: #475569; font-weight: 500; }
 .hero-btn { padding: 16px 48px; font-size: 18px; display: inline-flex; align-items: center; }
 .btn-arrow { margin-left: 8px; }
 @media (max-width: 600px) { .hero-container { padding: 32px 24px; } .hero-title { font-size: 24px; } .hero-features { gap: 20px; } }
 .hero { max-width: 1100px; width: 100%; margin-bottom: 30px; text-align: center; }
-.primary-btn { background: var(--primary-color); color: #fff; border: none; border-radius: 999px; padding: 12px 32px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 16px rgba(255, 80, 0, 0.25); transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease; text-decoration: none; display: inline-block; }
-.primary-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 22px rgba(255, 80, 0, 0.35); opacity: 0.95; }
-.primary-btn.dark { background: #222; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); }
+.primary-btn { background: var(--primary-color); color: #fff; border: none; border-radius: 999px; padding: 12px 32px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25); transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease; text-decoration: none; display: inline-block; }
+.primary-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 22px rgba(37, 99, 235, 0.35); opacity: 0.95; }
+.primary-btn.dark { background: #1e293b; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); }
 .tutorial-section { width: 100%; margin: 20px 0 10px; }
 .section-title { margin: 0 0 20px; font-size: 24px; color: var(--text-main); display: flex; align-items: center; gap: 8px; padding-bottom: 12px; border-bottom: 2px solid var(--primary-color); }
 .step-number { color: var(--primary-color); font-weight: 700; }
@@ -247,28 +247,28 @@ const downloadForEdge = () => {
 .status-badge svg { color: #4caf50; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 .next-step-container { margin-top: 20px; text-align: right; }
-.next-step-btn { background: linear-gradient(135deg, #ff5000, #ff7a00); font-size: 18px; padding: 14px 40px; }
+.next-step-btn { background: linear-gradient(135deg, #2563eb, #3b82f6); font-size: 18px; padding: 14px 40px; }
 .step-nav-buttons { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 20px; }
 .step-nav-buttons.fixed-bottom { position: fixed; bottom: 0; right: 0; left: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08); z-index: 100; }
 .miaoshou-download { margin-top: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .logo-links { display: flex; align-items: center; justify-content: center; gap: 20px; }
 .miaoshou-logo-link { display: inline-block; border-radius: 8px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .miaoshou-logo-link:hover { transform: scale(1.05); }
-.miaoshou-logo-link:hover .miaoshou-logo { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3); }
+.miaoshou-logo-link:hover .miaoshou-logo { box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3); }
 .miaoshou-logo { width: 150px; height: 40px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: box-shadow 0.2s ease; }
 .shein-logo-link { display: inline-block; border-radius: 8px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .shein-logo-link:hover { transform: scale(1.05); }
 .shein-logo-link:hover .shein-logo { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
 .shein-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: contain; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: box-shadow 0.2s ease; }
-.miaoshou-btn { background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 8px 16px rgba(102, 126, 234, 0.35); }
-.miaoshou-btn:hover { box-shadow: 0 12px 22px rgba(102, 126, 234, 0.45); }
+.miaoshou-btn { background: linear-gradient(135deg, #1e293b, #334155); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); }
+.miaoshou-btn:hover { box-shadow: 0 12px 22px rgba(0, 0, 0, 0.35); }
 .browser-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 .browser-btn { background: #fff; border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; }
 .browser-btn:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
 .browser-logo { width: 40px; height: 40px; border-radius: 4px; object-fit: contain; display: block; }
 .browser-label { font-size: 12px; color: #333; font-weight: 500; white-space: nowrap; }
 .primary-btn.outline { background: transparent; color: var(--primary-color); border: 2px solid var(--primary-color); box-shadow: none; }
-.primary-btn.outline:hover { background: #fff5f0; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 80, 0, 0.15); }
+.primary-btn.outline:hover { background: #eff6ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; }

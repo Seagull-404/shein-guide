@@ -1,7 +1,9 @@
 :root {
-    --primary-color: #ff5000;
-    --bg-color: #f8f9fa;
-    --text-main: #333;
+    --primary-color: #2563eb;
+    --primary-light: #3b82f6;
+    --primary-dark: #1d4ed8;
+    --bg-color: #f8fafc;
+    --text-main: #1e293b;
     --step-bg: #ffffff;
 }
 
