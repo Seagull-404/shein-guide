@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const showHero = ref(true)
 const showTutorial = ref(false)
@@ -26,14 +26,48 @@ const materialsProgress = computed(() => {
 const goToMaterials = () => { showMaterialsModal.value = true }
 const closeMaterials = () => { showMaterialsModal.value = false }
 const nextStep = () => { window.open('https://www.zhanfubrowser.com/download?code=3262', '_blank'); materialsStep.value = 2 }
-const nextStepDone = () => { showMaterialsModal.value = false; materialsStep.value = 1; showHero.value = false; showTutorial.value = true }
+const nextStepDone = () => { 
+  showMaterialsModal.value = false
+  materialsStep.value = 1
+  showHero.value = false
+  showTutorial.value = true
+  window.history.pushState({ page: 'tutorial', step: 1 }, '', '#step1')
+}
 
 const onZhanfuClick = () => { zhanfuClicked.value = true }
 const onSheinClick = () => { sheinClicked.value = true }
-const goToStep2 = () => { currentStep.value = 2 }
-const goToStep1 = () => { currentStep.value = 1 }
-const goToStep3 = () => { currentStep.value = 3 }
-const goToStep4 = () => { currentStep.value = 4 }
+
+const goToStep = (step) => {
+  currentStep.value = step
+  window.history.pushState({ page: 'tutorial', step }, '', `#step${step}`)
+}
+
+const goToStep1 = () => goToStep(1)
+const goToStep2 = () => goToStep(2)
+const goToStep3 = () => goToStep(3)
+const goToStep4 = () => goToStep(4)
+
+const handlePopState = (event) => {
+  if (event.state) {
+    if (event.state.page === 'tutorial') {
+      showHero.value = false
+      showTutorial.value = true
+      currentStep.value = event.state.step || 1
+    } else if (event.state.page === 'home') {
+      showHero.value = true
+      showTutorial.value = false
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('popstate', handlePopState)
+  window.history.replaceState({ page: 'home' }, '', '/')
+})
+
+onUnmounted(() => {
+  window.removeEventListener('popstate', handlePopState)
+})
 
 const downloadUrl = 'https://erp.91miaoshou.com/api/app/views/static/plugin/kuajing-erp-plugin-v3.zip'
 const downloadForChrome = () => {
@@ -118,11 +152,11 @@ const downloadForEdge = () => {
           </div>
         </div>
       </div>
-      <transition name="fade">
-        <div v-if="canGoNextStep" class="step-nav-buttons fixed-bottom">
-          <button class="primary-btn next-step-btn" @click="goToStep2">下一步 →</button>
-        </div>
-      </transition>
+      <div class="step-nav-buttons">
+        <button class="primary-btn outline" @click="goToStep1" v-if="currentStep > 1">← 上一步</button>
+        <button class="primary-btn" @click="goToStep2" v-if="currentStep === 1">下一步 →</button>
+        <button class="primary-btn" @click="goToStep3" v-if="currentStep === 2">下一步 →</button>
+      </div>
     </div>
     <div v-if="currentStep === 2">
       <h2 class="section-title"><span class="step-number">2.</span> 店铺资料填写</h2>
@@ -139,7 +173,7 @@ const downloadForEdge = () => {
           </div>
         </div>
       </div>
-      <div class="step-nav-buttons fixed-bottom">
+      <div class="step-nav-buttons">
         <button class="primary-btn outline" @click="goToStep1">← 上一步</button>
         <button class="primary-btn" @click="goToStep3">下一步 →</button>
       </div>
@@ -179,9 +213,8 @@ const downloadForEdge = () => {
           </div>
         </div>
       </div>
-      <div class="step-nav-buttons fixed-bottom">
+      <div class="step-nav-buttons">
         <button class="primary-btn outline" @click="goToStep2">← 上一步</button>
-        <button class="primary-btn" @click="goToStep4">下一步 →</button>
       </div>
     </div>
   </div>
@@ -248,8 +281,7 @@ const downloadForEdge = () => {
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 .next-step-container { margin-top: 20px; text-align: right; }
 .next-step-btn { background: linear-gradient(135deg, #2563eb, #3b82f6); font-size: 18px; padding: 14px 40px; }
-.step-nav-buttons { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 20px; }
-.step-nav-buttons.fixed-bottom { position: fixed; bottom: 0; right: 0; left: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08); z-index: 100; }
+.step-nav-buttons { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 0; margin-top: 20px; }
 .miaoshou-download { margin-top: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .logo-links { display: flex; align-items: center; justify-content: center; gap: 20px; }
 .miaoshou-logo-link { display: inline-block; border-radius: 8px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
