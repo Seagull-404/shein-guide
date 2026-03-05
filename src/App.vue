@@ -55,9 +55,32 @@ const downloadForEdge = () => {
 </script>
 
 <template>
-  <h1>SHEIN 商家入驻标准流程</h1>
-  <div v-if="showHero" class="hero">
-    <button class="primary-btn" @click="goToMaterials">我要开店</button>
+  <div v-if="showHero" class="hero-page">
+    <div class="hero-container">
+      <div class="company-brand">
+        <img src="/companylogo.jpg" alt="Company Logo" class="company-logo" />
+      </div>
+      <h1 class="hero-title">SHEIN 商家入驻标准流程</h1>
+      <p class="hero-subtitle">一站式开店指引，助您轻松开启跨境之旅</p>
+      <div class="hero-features">
+        <div class="feature-item">
+          <div class="feature-icon">📋</div>
+          <div class="feature-text">材料准备清单</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📖</div>
+          <div class="feature-text">图文视频教程</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🛠️</div>
+          <div class="feature-text">工具下载指引</div>
+        </div>
+      </div>
+      <button class="primary-btn hero-btn" @click="goToMaterials">
+        <span>立即开始</span>
+        <svg class="btn-arrow" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"/></svg>
+      </button>
+    </div>
   </div>
   <div v-if="showTutorial" class="tutorial-section">
     <div v-if="currentStep === 1">
@@ -84,7 +107,7 @@ const downloadForEdge = () => {
               </span>
             </div>
             <div class="action-item">
-              <a href="https://seller.sheins.com" target="_blank" class="primary-btn dark" @click="onSheinClick">
+              <a href="https://sbn-prod01.sheincorp.cn/" target="_blank" class="primary-btn dark" @click="onSheinClick">
                 SHEIN 商家注册
               </a>
               <span v-if="sheinClicked" class="status-badge done">
@@ -188,6 +211,19 @@ const downloadForEdge = () => {
 </template>
 
 <style scoped>
+.hero-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #fff5f0 0%, #ffe8dc 100%); padding: 20px; }
+.hero-container { max-width: 600px; width: 100%; text-align: center; background: #fff; border-radius: 24px; padding: 48px 40px; box-shadow: 0 20px 60px rgba(255, 80, 0, 0.15); }
+.company-brand { margin-bottom: 24px; }
+.company-logo { width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+.hero-title { font-size: 32px; font-weight: 700; color: var(--text-main); margin: 0 0 12px; }
+.hero-subtitle { font-size: 16px; color: #666; margin: 0 0 32px; }
+.hero-features { display: flex; justify-content: center; gap: 32px; margin-bottom: 40px; flex-wrap: wrap; }
+.feature-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.feature-icon { font-size: 32px; }
+.feature-text { font-size: 14px; color: #555; font-weight: 500; }
+.hero-btn { padding: 16px 48px; font-size: 18px; display: inline-flex; align-items: center; }
+.btn-arrow { margin-left: 8px; }
+@media (max-width: 600px) { .hero-container { padding: 32px 24px; } .hero-title { font-size: 24px; } .hero-features { gap: 20px; } }
 .hero { max-width: 1100px; width: 100%; margin-bottom: 30px; text-align: center; }
 .primary-btn { background: var(--primary-color); color: #fff; border: none; border-radius: 999px; padding: 12px 32px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 16px rgba(255, 80, 0, 0.25); transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease; text-decoration: none; display: inline-block; }
 .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 22px rgba(255, 80, 0, 0.35); opacity: 0.95; }
