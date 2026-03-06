@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "v1.5 弘联希音订单数据转换工具",
+  "version": "1.5.0",
+  "description": "支持希音后台订单转弘联免罚订单表，并将快递单号表转换为 Shein 订单回传表。",
+  "action": {
+    "default_title": "打开 v1.5 弘联希音订单数据转换工具",
+    "default_icon": {
+      "16": "icon.png",
+      "32": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "permissions": ["storage", "tabs"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "xlsx.full.min.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

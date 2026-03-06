@@ -242,7 +242,7 @@ const downloadForEdge = () => {
             <h4>推荐工具</h4>
             <div class="tools-grid">
               <a href="https://erp.91miaoshou.com/" target="_blank" class="tool-item">
-                <img src="/妙手logo.jpg" alt="妙手ERP" class="tool-icon" style="width: 80px; height: 80px;" />
+                <img src="/miaoshou-logo.jpg" alt="妙手ERP" class="tool-icon" style="width: 80px; height: 80px;" />
                 <span class="tool-name">妙手ERP</span>
               </a>
               <a href="https://us.shein.com/" target="_blank" class="tool-item">
@@ -293,15 +293,15 @@ const downloadForEdge = () => {
           <div class="tools-section">
             <h4>工具下载</h4>
             <div class="tools-grid">
-              <a href="/弘联插件.zip" download class="tool-item download">
-                <img src="/弘联icon.png" alt="弘联插件" class="tool-icon" />
+              <a href="/honglian-plugin.zip" download class="tool-item download">
+                <img src="/honglian-icon.png" alt="弘联插件" class="tool-icon" />
                 <span class="tool-name">弘联插件</span>
               </a>
-              <a href="/弘联配置文件.json" download class="tool-item download">
+              <a href="/honglian-config.json" download class="tool-item download">
                 <span class="tool-icon emoji">⚙️</span>
                 <span class="tool-name">配置文件</span>
               </a>
-              <a href="/track123模板.xlsx" download class="tool-item download">
+              <a href="/track123-template.xlsx" download class="tool-item download">
                 <span class="tool-icon emoji">📊</span>
                 <span class="tool-name">Track123模板</span>
               </a>
