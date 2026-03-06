@@ -123,7 +123,7 @@ const downloadForEdge = () => {
               <img src="/zf-logo.svg" alt="战斧浏览器" class="reg-logo zhanfu" />
               <span class="reg-text">注册</span>
             </a>
-            <a href="https://sbn-prod01.sheincorp.cn/" target="_blank" class="reg-link">
+            <a href="https://shein.top/bbcumlm" target="_blank" class="reg-link">
               <img src="/shein-s.svg" alt="SHEIN" class="reg-logo shein" />
               <span class="reg-text">SHEIN商家注册</span>
             </a>
@@ -203,6 +203,26 @@ const downloadForEdge = () => {
       </div>
       <div class="step-nav-buttons">
         <button class="primary-btn outline" @click="goToStep2">← 上一步</button>
+        <button class="primary-btn" @click="goToStep4">下一步 →</button>
+      </div>
+    </div>
+    <div v-if="currentStep === 4">
+      <h2 class="section-title"><span class="step-number">4.</span> 营销活动报名</h2>
+      <div class="tutorial-layout">
+        <div class="pdf-panel">
+          <h3>PDF 图文教程</h3>
+          <iframe class="pdf-frame" src="/shein-guide4.pdf"></iframe>
+        </div>
+        <div class="video-panel">
+          <h3>视频教程</h3>
+          <div class="placeholder-box video-placeholder">
+            <p>视频教程准备中...</p>
+            <p class="placeholder-hint">即将上线</p>
+          </div>
+        </div>
+      </div>
+      <div class="step-nav-buttons">
+        <button class="primary-btn outline" @click="goToStep3">← 上一步</button>
       </div>
     </div>
   </div>
