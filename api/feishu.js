@@ -1,11 +1,10 @@
 /**
  * Vercel Serverless Function - 飞书 API 代理
- * 用于处理前端发来的飞书表格写入请求
  */
 
 const https = require('https');
 
-// 飞书配置（从环境变量读取，安全）
+// 飞书配置
 const FEISHU_CONFIG = {
   appId: process.env.FEISHU_APP_ID || 'cli_a927f88bdc389bdf',
   appSecret: process.env.FEISHU_APP_SECRET || 'N5VooPOZcbWrdJzhg7tvHgreGdQsEene',
@@ -110,6 +109,22 @@ async function writeToFeishuTable(record) {
   });
 }
 
+// 解析请求 body
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
 // Vercel Serverless Function 入口
 module.exports = async (req, res) => {
   // 设置 CORS 头
@@ -130,7 +145,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const record = req.body;
+    // 解析请求 body
+    const record = await parseBody(req);
     console.log('收到写入请求:', record);
 
     const result = await writeToFeishuTable(record);
