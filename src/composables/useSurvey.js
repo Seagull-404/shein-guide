@@ -200,7 +200,12 @@ export function useSurvey() {
       console.log('准备提交到飞书表格:', record)
 
       try {
-        const response = await fetch('http://localhost:3001/api/feishu/record', {
+        // 根据环境选择 API 地址
+        const apiUrl = window.location.hostname === 'localhost'
+          ? 'http://localhost:3001/api/feishu/record'
+          : 'https://shein-guide.vercel.app/api/feishu'
+
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(record)
