@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useSurvey } from './composables/useSurvey'
+import BasicSurveyModal from './components/BasicSurveyModal.vue'
+import AccountSurveyModal from './components/AccountSurveyModal.vue'
 
 const showHero = ref(true)
 const showTutorial = ref(false)
@@ -7,6 +10,39 @@ const showMaterialsModal = ref(false)
 const materialsStep = ref(1)
 const currentStep = ref(1)
 const showHeader = ref(true)
+
+// 问卷相关
+const { shouldShowBasicSurvey, shouldShowAccountSurvey, isBasicFilled } = useSurvey()
+const showBasicSurvey = ref(false)
+const showAccountSurvey = ref(false)
+
+// 显示基础信息问卷（点击"我要开店"后调用）
+const showBasicSurveyModal = () => {
+  showBasicSurvey.value = true
+}
+
+// 显示账号信息问卷（第一步点击"下一步"后调用）
+const showAccountSurveyModal = () => {
+  showAccountSurvey.value = true
+}
+
+// 处理账号问卷关闭（点击"稍后再填"）
+const handleAccountSurveyClose = () => {
+  showAccountSurvey.value = false
+  // 继续进入第二步
+  currentStep.value = 2
+  showHeader.value = true
+  window.history.pushState({ page: 'tutorial', step: 2 }, '', '#step2')
+}
+
+// 处理账号问卷提交
+const handleAccountSurveySubmit = () => {
+  showAccountSurvey.value = false
+  // 继续进入第二步
+  currentStep.value = 2
+  showHeader.value = true
+  window.history.pushState({ page: 'tutorial', step: 2 }, '', '#step2')
+}
 
 const materials = ref([
   { id: 1, text: "身份证：法人/负责人身份证正反面照片（清晰无遮挡）", checked: false },
@@ -19,7 +55,10 @@ const materialsProgress = computed(() => {
   return `已完成 ${done} / ${materials.value.length} 项`
 })
 
-const goToMaterials = () => { showMaterialsModal.value = true }
+const goToMaterials = () => {
+  // 显示基础信息问卷
+  showBasicSurveyModal()
+}
 const closeMaterials = () => { showMaterialsModal.value = false }
 const nextStep = () => { 
   showMaterialsModal.value = false
@@ -30,6 +69,13 @@ const nextStep = () => {
 }
 
 const goToStep = (step) => {
+  // 如果从第一步进入第二步，显示账号信息问卷
+  if (currentStep.value === 1 && step === 2) {
+    showAccountSurveyModal()
+    // 不立即切换步骤，等用户填写完问卷后再切换
+    return
+  }
+
   currentStep.value = step
   showHeader.value = true
   window.history.pushState({ page: 'tutorial', step }, '', `#step${step}`)
@@ -271,10 +317,15 @@ const downloadForEdge = () => {
         </div>
         <div class="video-panel">
           <h3>视频教程</h3>
-          <div class="placeholder-box video-placeholder">
-            <p>视频教程准备中...</p>
-            <p class="placeholder-hint">即将上线</p>
-          </div>
+          <iframe 
+            class="video-frame" 
+            src="https://player.bilibili.com/player.html?bvid=BV1a4P4zWEbo&page=1&high_quality=1&danmaku=0"
+            scrolling="no" 
+            border="0" 
+            frameborder="no" 
+            framespacing="0" 
+            allowfullscreen="true"
+          ></iframe>
         </div>
       </div>
     </div>
@@ -353,6 +404,21 @@ const downloadForEdge = () => {
       </button>
     </div>
   </div>
+  
+  <!-- 基础信息问卷（点击"我要开店"后弹出） -->
+  <BasicSurveyModal
+    :show="showBasicSurvey"
+    @close="showBasicSurvey = false; showMaterialsModal = true"
+    @submit="showBasicSurvey = false; showMaterialsModal = true"
+  />
+
+  <!-- 账号信息问卷（第一步点击"下一步"后弹出） -->
+  <AccountSurveyModal
+    :show="showAccountSurvey"
+    @close="handleAccountSurveyClose"
+    @submit="handleAccountSurveySubmit"
+  />
+  
   <div v-if="showMaterialsModal" class="modal-overlay" @click="closeMaterials">
     <div class="modal-content" @click.stop>
       <span class="close-btn" @click="closeMaterials">&times;</span>
@@ -443,6 +509,7 @@ const downloadForEdge = () => {
 .pdf-panel, .video-panel { background: #fff; border-radius: 16px; padding: 12px; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04); }
 .pdf-panel h3, .video-panel h3 { margin-top: 0; margin-bottom: 10px; font-size: 16px; color: var(--text-main); }
 .pdf-frame { width: 100%; height: calc(100vh - 120px); min-height: 600px; border: none; border-radius: 8px; }
+.video-frame { width: 100%; height: calc(100vh - 120px); min-height: 600px; border: none; border-radius: 8px; }
 .placeholder-box { width: 100%; aspect-ratio: 210 / 297; max-height: calc(100vh - 140px); border: 2px dashed #ddd; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #999; background: #fafafa; }
 .video-placeholder { aspect-ratio: 16 / 9; max-height: 50vh; min-height: 360px; }
 .placeholder-box p { margin: 8px 0; font-size: 16px; }
