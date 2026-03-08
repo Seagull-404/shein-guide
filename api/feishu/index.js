@@ -1,11 +1,11 @@
 import https from 'https';
 
-// 飞书配置（从环境变量读取）
+// 飞书配置（从环境变量读取，带默认值）
 const FEISHU_CONFIG = {
-  appId: process.env.FEISHU_APP_ID,
-  appSecret: process.env.FEISHU_APP_SECRET,
-  baseId: process.env.FEISHU_BASE_ID,
-  tableId: process.env.FEISHU_TABLE_ID
+  appId: process.env.FEISHU_APP_ID || 'cli_a927f88bdc389bdf',
+  appSecret: process.env.FEISHU_APP_SECRET || 'N5VooPOZcbWrdJzhg7tvHgreGdQsEene',
+  baseId: process.env.FEISHU_BASE_ID || 'QQmOb1kOsacDZksa7JRclM7snKf',
+  tableId: process.env.FEISHU_TABLE_ID || 'tblVcBw1zUhWp6IU'
 };
 
 // 缓存访问令牌
@@ -16,6 +16,11 @@ let tokenExpireTime = 0;
 async function getAccessToken() {
   if (accessToken && Date.now() < tokenExpireTime) {
     return accessToken;
+  }
+
+  // 验证配置
+  if (!FEISHU_CONFIG.appId || !FEISHU_CONFIG.appSecret) {
+    throw new Error('飞书配置缺失：appId 或 appSecret 为空');
   }
 
   return new Promise((resolve, reject) => {
@@ -46,15 +51,15 @@ async function getAccessToken() {
             tokenExpireTime = Date.now() + (result.expire - 300) * 1000;
             resolve(accessToken);
           } else {
-            reject(new Error(`获取令牌失败: ${result.msg}`));
+            reject(new Error(`获取令牌失败: ${result.msg} (code: ${result.code})`));
           }
         } catch (e) {
-          reject(e);
+          reject(new Error(`解析令牌响应失败: ${e.message}`));
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', (e) => reject(new Error(`请求令牌失败: ${e.message}`)));
     req.write(postData);
     req.end();
   });
@@ -63,6 +68,11 @@ async function getAccessToken() {
 // 写入飞书表格
 async function writeToFeishuTable(record) {
   const token = await getAccessToken();
+
+  // 验证配置
+  if (!FEISHU_CONFIG.baseId || !FEISHU_CONFIG.tableId) {
+    throw new Error('飞书配置缺失：baseId 或 tableId 为空');
+  }
 
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify({
@@ -93,12 +103,12 @@ async function writeToFeishuTable(record) {
             reject(new Error(`写入表格失败: ${result.msg} (code: ${result.code})`));
           }
         } catch (e) {
-          reject(e);
+          reject(new Error(`解析表格响应失败: ${e.message}`));
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', (e) => reject(new Error(`请求表格失败: ${e.message}`)));
     req.write(postData);
     req.end();
   });
@@ -111,12 +121,16 @@ function parseBody(req) {
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
-        resolve(JSON.parse(body));
+        if (!body) {
+          resolve({});
+        } else {
+          resolve(JSON.parse(body));
+        }
       } catch (e) {
-        reject(e);
+        reject(new Error(`解析请求体失败: ${e.message}`));
       }
     });
-    req.on('error', reject);
+    req.on('error', (e) => reject(new Error(`读取请求失败: ${e.message}`)));
   });
 }
 
@@ -135,16 +149,25 @@ export default async function handler(req, res) {
 
   // 只接受 POST 请求
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method Not Allowed' });
+    res.status(405).json({ success: false, error: 'Method Not Allowed' });
     return;
   }
 
   try {
     const record = await parseBody(req);
-    console.log('收到写入请求:', record);
+    console.log('收到写入请求:', JSON.stringify(record, null, 2));
+
+    // 验证请求数据
+    if (!record || !record.fields) {
+      res.status(400).json({
+        success: false,
+        error: '请求格式错误：缺少 fields 字段'
+      });
+      return;
+    }
 
     const result = await writeToFeishuTable(record);
-    console.log('写入成功:', result);
+    console.log('写入成功:', JSON.stringify(result, null, 2));
 
     res.status(200).json({
       success: true,
@@ -155,7 +178,8 @@ export default async function handler(req, res) {
     console.error('写入失败:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
