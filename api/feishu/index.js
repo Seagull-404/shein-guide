@@ -1,11 +1,11 @@
 import https from 'https';
 
-// 飞书配置
+// 飞书配置（从环境变量读取）
 const FEISHU_CONFIG = {
-  appId: process.env.FEISHU_APP_ID || 'cli_a927f88bdc389bdf',
-  appSecret: process.env.FEISHU_APP_SECRET || 'N5VooPOZcbWrdJzhg7tvHgreGdQsEene',
-  baseId: process.env.FEISHU_BASE_ID || 'QQmOb1kOsacDZksa7JRclM7snKf',
-  tableId: process.env.FEISHU_TABLE_ID || 'tblVcBw1zUhWp6IU'
+  appId: process.env.FEISHU_APP_ID,
+  appSecret: process.env.FEISHU_APP_SECRET,
+  baseId: process.env.FEISHU_BASE_ID,
+  tableId: process.env.FEISHU_TABLE_ID
 };
 
 // 缓存访问令牌
@@ -90,7 +90,6 @@ async function writeToFeishuTable(record) {
           if (result.code === 0) {
             resolve(result.data);
           } else {
-            console.error('飞书 API 错误:', result);
             reject(new Error(`写入表格失败: ${result.msg} (code: ${result.code})`));
           }
         } catch (e) {
@@ -141,7 +140,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 解析请求 body
     const record = await parseBody(req);
     console.log('收到写入请求:', record);
 
