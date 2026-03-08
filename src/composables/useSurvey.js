@@ -203,7 +203,7 @@ export function useSurvey() {
         // 根据环境选择 API 地址
         const apiUrl = window.location.hostname === 'localhost'
           ? 'http://localhost:3001/api/feishu/record'
-          : 'https://shein-guide.vercel.app/api'
+          : 'https://shein-guide.vercel.app/api/feishu'
 
         const response = await fetch(apiUrl, {
           method: 'POST',

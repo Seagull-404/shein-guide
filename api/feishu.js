@@ -1,8 +1,4 @@
-/**
- * Vercel Serverless Function - 飞书 API 代理
- */
-
-const https = require('https');
+import https from 'https';
 
 // 飞书配置
 const FEISHU_CONFIG = {
@@ -126,7 +122,7 @@ function parseBody(req) {
 }
 
 // Vercel Serverless Function 入口
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -164,4 +160,4 @@ module.exports = async (req, res) => {
       message: error.message
     });
   }
-};
+}
