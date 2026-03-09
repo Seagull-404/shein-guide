@@ -337,16 +337,21 @@ const downloadForEdge = () => {
         </div>
         <div class="video-panel">
           <h3>视频教程</h3>
-          <div class="placeholder-box video-placeholder">
-            <p>视频教程准备中...</p>
-            <p class="placeholder-hint">即将上线</p>
-          </div>
+          <iframe 
+            class="video-frame" 
+            src="https://player.bilibili.com/player.html?bvid=BV1BfPQzBEUV&page=1&high_quality=1&danmaku=0"
+            scrolling="no" 
+            border="0" 
+            frameborder="no" 
+            framespacing="0" 
+            allowfullscreen="true"
+          ></iframe>
           <div class="tools-section">
             <h4>工具下载</h4>
             <div class="tools-grid">
               <a href="/honglian-plugin.zip" download class="tool-item download">
-                <img src="/honglian-icon.png" alt="弘联插件" class="tool-icon" />
-                <span class="tool-name">弘联插件</span>
+                <img src="/honglian-icon.png" alt="订单转换插件" class="tool-icon" />
+                <span class="tool-name">订单转换插件</span>
               </a>
               <a href="/honglian-config.json" download class="tool-item download">
                 <span class="tool-icon emoji">⚙️</span>
