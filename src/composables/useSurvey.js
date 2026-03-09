@@ -204,7 +204,7 @@ export function useSurvey() {
         const isDev = window.location.hostname === 'localhost'
         const apiUrl = isDev
           ? 'http://localhost:3001/api/feishu/record'
-          : '/api/feishu'
+          : '/feishu-api'
 
         const response = await fetch(apiUrl, {
           method: 'POST',
