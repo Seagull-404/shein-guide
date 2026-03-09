@@ -201,9 +201,10 @@ export function useSurvey() {
 
       try {
         // 根据环境选择 API 地址
-        const apiUrl = window.location.hostname === 'localhost'
+        // 腾讯云开发环境会自动注入环境变量，        const isDev = window.location.hostname === 'localhost'
+        const apiUrl = isDev
           ? 'http://localhost:3001/api/feishu/record'
-          : 'https://shein-guide.vercel.app/api/feishu/'
+          : '/api/feishu'  // 腾讯云开发使用相对路径
 
         const response = await fetch(apiUrl, {
           method: 'POST',

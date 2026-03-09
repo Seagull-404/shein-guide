@@ -1,0 +1,30 @@
+{
+  "version": "2.0",
+  "envId": "{{envId}}",
+  "$schema": "https://framework-1258016615.tcloudbaseapp.com/schema/latest.json",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    {
+      "name": "feishu",
+      "timeout": 10,
+      "envVariables": {
+        "FEISHU_APP_ID": "{{FEISHU_APP_ID}}",
+        "FEISHU_APP_SECRET": "{{FEISHU_APP_SECRET}}",
+        "FEISHU_BASE_ID": "{{FEISHU_BASE_ID}}",
+        "FEISHU_TABLE_ID": "{{FEISHU_TABLE_ID}}"
+      },
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "memorySize": 128
+    }
+  ],
+  "framework": {
+    "name": "vue",
+    "plugins": {}
+  },
+  "website": {
+    "client": {
+      "output": "dist"
+    }
+  }
+}
