@@ -26,23 +26,18 @@ jobs:
     - name: Build project
       run: npm run build
 
+    - name: List dist files
+      run: |
+        echo "Files in dist:"
+        ls -la ./dist/
+        echo "Files in dist/assets:"
+        ls -la ./dist/assets/
+
     - name: Install CloudBase CLI
       run: npm install -g @cloudbase/cli
 
     - name: Login CloudBase CLI
       run: tcb login --apiKeyId ${{ secrets.TCB_SECRET_ID }} --apiKey ${{ secrets.TCB_SECRET_KEY }}
 
-    - name: List files before deploy
-      run: |
-        echo "Files in dist/assets:"
-        ls -la ./dist/assets/
-
     - name: Deploy to CloudBase Static Hosting
-      run: |
-        # 部署到 /shein 路径
-        tcb hosting deploy ./dist /shein -e ${{ secrets.TCB_ENV_ID }}
-
-    - name: Verify deployment
-      run: |
-        echo "Deployment completed. Please manually delete old files from Tencent Cloud Console if they still exist."
-        echo "Old files to delete: index-D5PapHI9.css, index-DwtIO-Dh.js"
+      run: tcb hosting deploy ./dist /shein -e ${{ secrets.TCB_ENV_ID }}
