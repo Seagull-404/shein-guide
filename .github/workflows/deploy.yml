@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
     - name: Checkout code
@@ -40,4 +41,4 @@ jobs:
       run: tcb login --apiKeyId ${{ secrets.TCB_SECRET_ID }} --apiKey ${{ secrets.TCB_SECRET_KEY }}
 
     - name: Deploy to CloudBase Static Hosting
-      run: tcb hosting deploy ./dist /shein -e ${{ secrets.TCB_ENV_ID }}
+      run: tcb hosting deploy ./dist /shein -e ${{ secrets.TCB_ENV_ID }} --timeout 600000
