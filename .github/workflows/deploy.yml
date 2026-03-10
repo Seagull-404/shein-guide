@@ -32,5 +32,11 @@ jobs:
     - name: Login CloudBase CLI
       run: tcb login --apiKeyId ${{ secrets.TCB_SECRET_ID }} --apiKey ${{ secrets.TCB_SECRET_KEY }}
 
+    - name: Clean old files from CloudBase
+      run: |
+        echo "Deleting old assets..."
+        tcb hosting delete /shein/assets -e ${{ secrets.TCB_ENV_ID }} --force || true
+        echo "Old files cleaned"
+
     - name: Deploy to CloudBase Static Hosting
       run: tcb hosting deploy ./dist /home -e ${{ secrets.TCB_ENV_ID }}
