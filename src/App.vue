@@ -221,7 +221,7 @@ const downloadForEdge = () => {
       <div class="tutorial-layout">
         <div class="pdf-panel">
           <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein-guide.pdf"></iframe>
+          <iframe class="pdf-frame" src="/shein/shein-guide.pdf"></iframe>
         </div>
         <div class="video-panel">
           <h3>视频教程</h3>
@@ -249,7 +249,7 @@ const downloadForEdge = () => {
       <div class="tutorial-layout">
         <div class="pdf-panel">
           <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein-guide2.pdf"></iframe>
+          <iframe class="pdf-frame" src="/shein/shein-guide2.pdf"></iframe>
         </div>
         <div class="video-panel">
           <h3>视频教程</h3>
@@ -276,7 +276,7 @@ const downloadForEdge = () => {
       <div class="tutorial-layout">
         <div class="pdf-panel">
           <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein-guide3.pdf"></iframe>
+          <iframe class="pdf-frame" src="/shein/shein-guide3.pdf"></iframe>
         </div>
         <div class="video-panel">
           <h3>视频教程</h3>
@@ -313,7 +313,7 @@ const downloadForEdge = () => {
       <div class="tutorial-layout">
         <div class="pdf-panel">
           <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein-guide4.pdf"></iframe>
+          <iframe class="pdf-frame" src="/shein/shein-guide4.pdf"></iframe>
         </div>
         <div class="video-panel">
           <h3>视频教程</h3>
@@ -333,7 +333,7 @@ const downloadForEdge = () => {
       <div class="tutorial-layout">
         <div class="pdf-panel">
           <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein-guide5.pdf"></iframe>
+          <iframe class="pdf-frame" src="/shein/shein-guide5.pdf"></iframe>
         </div>
         <div class="video-panel">
           <h3>视频教程</h3>
