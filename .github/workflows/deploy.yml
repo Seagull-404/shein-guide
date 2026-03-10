@@ -27,13 +27,6 @@ jobs:
     - name: Build project
       run: npm run build
 
-    - name: List dist files
-      run: |
-        echo "Files in dist:"
-        ls -la ./dist/
-        echo "Files in dist/assets:"
-        ls -la ./dist/assets/
-
     - name: Install CloudBase CLI
       run: npm install -g @cloudbase/cli
 
@@ -41,4 +34,4 @@ jobs:
       run: tcb login --apiKeyId ${{ secrets.TCB_SECRET_ID }} --apiKey ${{ secrets.TCB_SECRET_KEY }}
 
     - name: Deploy to CloudBase Static Hosting
-      run: tcb hosting deploy ./dist /shein -e ${{ secrets.TCB_ENV_ID }} --timeout 600000
+      run: tcb hosting deploy ./dist /shein -e ${{ secrets.TCB_ENV_ID }}
