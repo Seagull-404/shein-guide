@@ -9,6 +9,20 @@
     <link rel="apple-touch-icon" type="image/jpeg" href="/icon.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SHEIN 中国商家开店全流程指引</title>
+    <script>
+      // 清除所有缓存，强制加载最新版本
+      (function() {
+        var version = 'v=' + new Date().getTime();
+        var scripts = document.querySelectorAll('script[src]');
+        var links = document.querySelectorAll('link[rel="stylesheet"]');
+        scripts.forEach(function(s) {
+          if (s.src && !s.src.includes('?')) s.src += '?' + version;
+        });
+        links.forEach(function(l) {
+          if (l.href && !l.href.includes('?')) l.href += '?' + version;
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
