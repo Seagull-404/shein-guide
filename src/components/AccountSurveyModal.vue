@@ -1,75 +1,83 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="show" class="survey-modal" @click.self="handleCancel">
-        <div class="modal-content">
-          <div class="modal-header success-header">
-            <div class="success-icon">🎉</div>
-            <h2>恭喜完成注册！</h2>
-            <p class="subtitle">请填写您的 SHEIN 店铺账号信息</p>
+      <div v-if="show" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" @click.self="handleCancel">
+        <div class="bg-white/90 backdrop-blur-xl border border-white w-full max-w-md rounded-3xl p-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] transform transition-transform" @click.stop>
+          
+          <button @click="handleCancel" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 hover:rotate-90 transition-transform">
+             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+
+          <div class="mb-8 text-center flex flex-col items-center">
+            <div class="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-4xl shadow-lg shadow-emerald-500/30 mb-4 animate-bounce">🎉</div>
+            <h2 class="text-2xl font-extrabold text-slate-800">恭喜完成注册！</h2>
+            <p class="mt-2 text-sm text-slate-500 font-medium">请填写您的 SHEIN 店铺账号信息</p>
           </div>
           
-          <form @submit.prevent="handleSubmit" class="survey-form">
-            <div class="form-group">
-              <label for="sheinAccount">
-                <span class="required">*</span> 希音账号（SHEIN店铺账号）
+          <form @submit.prevent="handleSubmit" class="space-y-4">
+            
+            <div class="space-y-1">
+              <label for="sheinAccount" class="text-sm font-medium text-slate-700">
+                <span class="text-red-500">*</span> 希音账号
               </label>
               <input
                 id="sheinAccount"
                 v-model="form.sheinAccount"
                 type="text"
-                placeholder="请输入您的SHEIN店铺账号"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm outline-none"
+                placeholder="通常是注册时使用的邮箱或手机号"
                 required
               />
-              <span class="hint">通常是注册时使用的邮箱或手机号</span>
             </div>
             
-            <div class="form-group">
-              <label for="sheinPassword">
-                <span class="required">*</span> 希音密码
+            <div class="space-y-1">
+              <label for="sheinPassword" class="text-sm font-medium text-slate-700">
+                <span class="text-red-500">*</span> 希音密码
               </label>
-              <div class="password-input">
+              <div class="relative">
                 <input
                   id="sheinPassword"
                   v-model="form.sheinPassword"
                   :type="showPassword ? 'text' : 'password'"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm outline-none pr-10"
                   placeholder="请输入店铺密码"
                   required
                 />
                 <button 
                   type="button" 
-                  class="toggle-password"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
                   @click="showPassword = !showPassword"
                 >
-                  {{ showPassword ? '🙈' : '👁️' }}
+                  <svg v-if="!showPassword" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                  <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
                 </button>
               </div>
-              <span class="hint">密码将被加密存储，仅用于后续自动化服务</span>
             </div>
             
-            <div class="info-box">
-              <h4>📋 为什么需要这些信息？</h4>
-              <ul>
+            <div class="bg-blue-50/50 border border-blue-100/50 rounded-xl p-4 mt-6">
+              <h4 class="text-xs font-bold text-blue-800 mb-2 flex items-center gap-2">📋 为什么需要这些信息？</h4>
+              <ul class="text-xs text-blue-600/80 space-y-1 pl-6 list-disc marker:text-blue-300">
                 <li>用于后续的订单自动化处理</li>
                 <li>同步物流信息到您的店铺</li>
                 <li>自动生成发货记录</li>
               </ul>
             </div>
             
-            <div class="form-notice warning">
-              <span class="icon">⚠️</span>
-              <span>请确保账号密码正确，错误的凭证将导致自动化失败</span>
+            <div class="flex items-start gap-2 p-3 bg-amber-50 rounded-xl text-xs text-amber-800 border border-amber-100 mt-2">
+              <span class="text-base leading-none">⚠️</span>
+              <span class="leading-tight">请确保账号密码正确，错误的凭证将导致自动化失败</span>
             </div>
             
-            <div class="form-actions">
-              <button type="button" class="btn-cancel" @click="handleCancel">
+            <div class="flex gap-4 pt-4">
+              <button type="button" class="flex-1 px-6 py-3 rounded-xl font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors" @click="handleCancel">
                 稍后再填
               </button>
-              <button type="submit" class="btn-submit" :disabled="isSubmitting">
+              <button type="submit" class="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-all disabled:opacity-70 disabled:cursor-not-allowed" :disabled="isSubmitting">
                 <span v-if="isSubmitting">提交中...</span>
                 <span v-else>提交完成</span>
               </button>
             </div>
+            
           </form>
         </div>
       </div>
@@ -130,207 +138,6 @@ const handleCancel = () => {
 </script>
 
 <style scoped>
-.survey-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: center;
-}
-
-.success-header {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border-bottom: none;
-}
-
-.success-icon {
-  font-size: 48px;
-  margin-bottom: 8px;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.success-header h2 {
-  color: white;
-}
-
-.subtitle {
-  margin: 8px 0 0;
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-.survey-form {
-  padding: 20px 24px 24px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.required {
-  color: #ef4444;
-  margin-right: 2px;
-}
-
-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.hint {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.password-input {
-  position: relative;
-}
-
-.password-input input {
-  padding-right: 40px;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 4px;
-}
-
-.info-box {
-  background: #eff6ff;
-  border-radius: 8px;
-  padding: 16px;
-  margin: 20px 0;
-}
-
-.info-box h4 {
-  margin: 0 0 8px;
-  font-size: 14px;
-  color: #1e40af;
-}
-
-.info-box ul {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 13px;
-  color: #3b82f6;
-}
-
-.info-box li {
-  margin-bottom: 4px;
-}
-
-.form-notice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 8px;
-  margin: 20px 0;
-  font-size: 13px;
-}
-
-.form-notice.warning {
-  background: #fffbeb;
-  color: #92400e;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.btn-cancel,
-.btn-submit {
-  flex: 1;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-cancel {
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  color: #6b7280;
-}
-
-.btn-cancel:hover {
-  background: #e5e7eb;
-}
-
-.btn-submit {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: none;
-  color: white;
-}
-
-.btn-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-}
-
-.btn-submit:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
 /* 动画 */
 .modal-enter-active,
 .modal-leave-active {
@@ -342,13 +149,13 @@ input:focus {
   opacity: 0;
 }
 
-.modal-enter-active .modal-content,
-.modal-leave-active .modal-content {
-  transition: transform 0.3s ease;
+.modal-enter-active > div,
+.modal-leave-active > div {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
+.modal-enter-from > div,
+.modal-leave-to > div {
   transform: scale(0.95) translateY(10px);
 }
 </style>

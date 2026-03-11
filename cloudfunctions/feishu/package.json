@@ -1,0 +1,7 @@
+{
+  "name": "feishu-cloudfunction",
+  "version": "1.0.0",
+  "description": "飞书表格写入云函数",
+  "main": "index.js",
+  "dependencies": {}
+}
