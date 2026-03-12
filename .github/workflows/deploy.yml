@@ -3,7 +3,7 @@ name: Deploy to CloudBase Static Hosting
 on:
   push:
     branches:
-      - main
+      - clean-main
   workflow_dispatch:
 
 jobs:
