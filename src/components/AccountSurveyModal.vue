@@ -25,7 +25,7 @@
                 v-model="form.sheinAccount"
                 type="text"
                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm outline-none"
-                placeholder="通常是注册时使用的邮箱或手机号"
+                placeholder="SHEIN店铺右上角GS开头的账号"
                 required
               />
             </div>

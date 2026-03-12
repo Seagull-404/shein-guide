@@ -154,6 +154,33 @@ export function useSurvey() {
     return true
   }
   
+  // 合并提交所有信息
+  async function submitCombinedInfo(formData) {
+    surveyData.value.basicInfo = {
+      team: formData.team,
+      licenseName: formData.licenseName,
+      licenseCode: formData.licenseCode,
+      licenseDate: formData.licenseDate,
+      legalName: formData.legalName,
+      licenseAddress: formData.licenseAddress,
+      filledAt: new Date().toISOString()
+    }
+    surveyData.value.accountInfo = {
+      sheinAccount: formData.sheinAccount,
+      sheinPassword: encryptPassword(formData.sheinPassword),
+      filledAt: new Date().toISOString()
+    }
+    surveyData.value.status.basicFilled = true
+    surveyData.value.status.accountFilled = true
+    surveyData.value.status.skipped = false
+    saveSurveyData(surveyData.value)
+    
+    // 提交到飞书
+    await submitToFeishu('combined', surveyData.value)
+    
+    return true
+  }
+  
   // 处理跳过
   function handleSkip(step) {
     surveyData.value.status.skipped = true
@@ -270,6 +297,7 @@ export function useSurvey() {
     shouldShowAccountSurvey,
     submitBasicInfo,
     submitAccountInfo,
+    submitCombinedInfo,
     handleSkip,
     resetSurvey
   }

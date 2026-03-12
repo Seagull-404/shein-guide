@@ -1,8 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useSurvey } from './composables/useSurvey'
-import BasicSurveyModal from './components/BasicSurveyModal.vue'
-import AccountSurveyModal from './components/AccountSurveyModal.vue'
+import CombinedSurveyModal from './components/CombinedSurveyModal.vue'
 import gsap from 'gsap'
 
 const STEP_COUNT = 5
@@ -16,13 +15,21 @@ const showHeader = ref(true)
 let headerHideTimer = null
 
 // 问卷相关
-const { shouldShowBasicSurvey, shouldShowAccountSurvey, isBasicFilled } = useSurvey()
-const showBasicSurvey = ref(false)
-const showAccountSurvey = ref(false)
+const { isBasicFilled, isAccountFilled } = useSurvey()
+const showCombinedSurvey = ref(false)
 const staticBaseUrl = import.meta.env.BASE_URL
 
-const showBasicSurveyModal = () => { showBasicSurvey.value = true }
-const showAccountSurveyModal = () => { showAccountSurvey.value = true }
+const showCombinedSurveyModal = () => { showCombinedSurvey.value = true }
+
+const handleCombinedSurveyClose = () => {
+  showCombinedSurvey.value = false
+  navigateToStep(3)
+}
+
+const handleCombinedSurveySubmit = () => {
+  showCombinedSurvey.value = false
+  navigateToStep(3)
+}
 
 const scheduleHeaderHide = () => {
   if (headerHideTimer) clearTimeout(headerHideTimer)
@@ -96,16 +103,6 @@ const navigateHome = () => {
   syncRouteState()
 }
 
-const handleAccountSurveyClose = () => {
-  showAccountSurvey.value = false
-  navigateToStep(2)
-}
-
-const handleAccountSurveySubmit = () => {
-  showAccountSurvey.value = false
-  navigateToStep(2)
-}
-
 const materials = ref([
   { id: 1, text: "身份证：法人/负责人身份证正反面照片（清晰无遮挡）", checked: false },
   { id: 2, text: "营业执照：最新年检合格的营业执照电子版或扫描件", checked: false },
@@ -117,7 +114,9 @@ const materialsProgress = computed(() => {
   return `已完成 ${done} / ${materials.value.length} 项`
 })
 
-const goToMaterials = () => { showBasicSurveyModal() }
+const goToMaterials = () => { 
+  showMaterialsModal.value = true
+}
 const closeMaterials = () => { showMaterialsModal.value = false }
 const nextStep = () => { 
   showMaterialsModal.value = false
@@ -126,8 +125,8 @@ const nextStep = () => {
 }
 
 const goToStep = (step) => {
-  if (currentStep.value === 1 && step === 2) {
-    showAccountSurveyModal()
+  if (currentStep.value === 2 && step === 3) {
+    showCombinedSurveyModal()
     return
   }
   navigateToStep(step)
@@ -366,8 +365,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Modals -->
-    <BasicSurveyModal :show="showBasicSurvey" @close="showBasicSurvey = false; showMaterialsModal = true" @submit="showBasicSurvey = false; showMaterialsModal = true" />
-    <AccountSurveyModal :show="showAccountSurvey" @close="handleAccountSurveyClose" @submit="handleAccountSurveySubmit" />
+    <CombinedSurveyModal :show="showCombinedSurvey" @close="handleCombinedSurveyClose" @submit="handleCombinedSurveySubmit" />
 
     <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 backdrop-blur-none" enter-to-class="opacity-100 backdrop-blur-sm" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 backdrop-blur-sm" leave-to-class="opacity-0 backdrop-blur-none">
       <div v-if="showMaterialsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" @click="closeMaterials">
