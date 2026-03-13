@@ -287,8 +287,9 @@ onUnmounted(() => {
                 <div class="flex"><span class="w-16 text-slate-400 font-bold">仓库</span><span class="text-slate-800">纽约美东仓库</span></div>
                 <div class="flex"><span class="w-16 text-slate-400 font-bold">姓名</span><span class="text-slate-800">JOHN LEAVY</span></div>
                 <div class="flex"><span class="w-16 text-slate-400 font-bold">邮编</span><span class="text-slate-800">11413</span></div>
-                <div class="flex"><span class="w-16 text-slate-400 font-bold">手机</span><span class="text-slate-800">（+1）123456789</span></div>
+                <div class="flex"><span class="w-16 text-slate-400 font-bold">手机</span><span class="text-slate-800">（+1）123456789(随便写满足位数要求即可)</span></div>
                 <div class="flex"><span class="w-16 text-slate-400 font-bold">省市</span><span class="text-slate-800">NY, JAMAICA</span></div>
+                <div class="flex"><span class="w-16 text-slate-400 font-bold">邮箱</span><span class="text-slate-800">XXXXXX@gmail.com</span></div>
                 <div class="flex mt-2"><span class="w-16 text-slate-400 font-bold">地址</span><span class="text-slate-800">133-11 FRANCLS LEWIS BLVD</span></div>
               </div>
             </div>
