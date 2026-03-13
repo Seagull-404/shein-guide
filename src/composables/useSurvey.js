@@ -154,6 +154,33 @@ export function useSurvey() {
     return true
   }
   
+  // 合并提交所有信息
+  async function submitCombinedInfo(formData) {
+    surveyData.value.basicInfo = {
+      team: formData.team,
+      licenseName: formData.licenseName,
+      licenseCode: formData.licenseCode,
+      licenseDate: formData.licenseDate,
+      legalName: formData.legalName,
+      licenseAddress: formData.licenseAddress,
+      filledAt: new Date().toISOString()
+    }
+    surveyData.value.accountInfo = {
+      sheinAccount: formData.sheinAccount,
+      sheinPassword: encryptPassword(formData.sheinPassword),
+      filledAt: new Date().toISOString()
+    }
+    surveyData.value.status.basicFilled = true
+    surveyData.value.status.accountFilled = true
+    surveyData.value.status.skipped = false
+    saveSurveyData(surveyData.value)
+    
+    // 提交到飞书
+    await submitToFeishu('combined', surveyData.value)
+    
+    return true
+  }
+  
   // 处理跳过
   function handleSkip(step) {
     surveyData.value.status.skipped = true
@@ -173,22 +200,22 @@ export function useSurvey() {
   // 提交到飞书多维表格
   async function submitToFeishu(step, data) {
     try {
-      // 转换日期为 Unix 时间戳（飞书 API 要求）
+      // 转换日期为毫秒级时间戳（飞书 API 要求）
       const getTimestamp = (dateStr) => {
         if (!dateStr) return null
         const date = new Date(dateStr)
-        return isNaN(date.getTime()) ? null : Math.floor(date.getTime() / 1000)
+        return isNaN(date.getTime()) ? null : date.getTime()
       }
 
       // 准备表格数据
       const record = {
         fields: {
           '访客ID': data.visitorId,
-          '提交时间': Math.floor(Date.now() / 1000), // Unix 时间戳
+          '提交时间': Date.now(), // 毫秒级时间戳
           '隶属团队': data.basicInfo.team || '',
           '营业执照名称': data.basicInfo.licenseName || '',
           '信用代码': data.basicInfo.licenseCode || '',
-          '注册日期': getTimestamp(data.basicInfo.licenseDate), // Unix 时间戳
+          '注册日期': getTimestamp(data.basicInfo.licenseDate), // 毫秒级时间戳
           '法人姓名': data.basicInfo.legalName || '',
           '注册地址': data.basicInfo.licenseAddress || '',
           '希音账号': data.accountInfo.sheinAccount || '',
@@ -270,6 +297,7 @@ export function useSurvey() {
     shouldShowAccountSurvey,
     submitBasicInfo,
     submitAccountInfo,
+    submitCombinedInfo,
     handleSkip,
     resetSurvey
   }

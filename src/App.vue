@@ -1,8 +1,10 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useSurvey } from './composables/useSurvey'
-import BasicSurveyModal from './components/BasicSurveyModal.vue'
-import AccountSurveyModal from './components/AccountSurveyModal.vue'
+import CombinedSurveyModal from './components/CombinedSurveyModal.vue'
+import gsap from 'gsap'
+
+const STEP_COUNT = 5
 
 const showHero = ref(true)
 const showTutorial = ref(false)
@@ -10,38 +12,95 @@ const showMaterialsModal = ref(false)
 const materialsStep = ref(1)
 const currentStep = ref(1)
 const showHeader = ref(true)
+let headerHideTimer = null
 
 // 问卷相关
-const { shouldShowBasicSurvey, shouldShowAccountSurvey, isBasicFilled } = useSurvey()
-const showBasicSurvey = ref(false)
-const showAccountSurvey = ref(false)
+const { isBasicFilled, isAccountFilled } = useSurvey()
+const showCombinedSurvey = ref(false)
+const staticBaseUrl = import.meta.env.BASE_URL
 
-// 显示基础信息问卷（点击"我要开店"后调用）
-const showBasicSurveyModal = () => {
-  showBasicSurvey.value = true
+const showCombinedSurveyModal = () => { showCombinedSurvey.value = true }
+
+const handleCombinedSurveyClose = () => {
+  showCombinedSurvey.value = false
+  navigateToStep(3)
 }
 
-// 显示账号信息问卷（第一步点击"下一步"后调用）
-const showAccountSurveyModal = () => {
-  showAccountSurvey.value = true
+const handleCombinedSurveySubmit = () => {
+  showCombinedSurvey.value = false
+  navigateToStep(3)
 }
 
-// 处理账号问卷关闭（点击"稍后再填"）
-const handleAccountSurveyClose = () => {
-  showAccountSurvey.value = false
-  // 继续进入第二步
-  currentStep.value = 2
-  showHeader.value = true
-  window.history.pushState({ page: 'tutorial', step: 2 }, '', '#step2')
+const scheduleHeaderHide = () => {
+  if (headerHideTimer) clearTimeout(headerHideTimer)
+  headerHideTimer = setTimeout(() => { showHeader.value = false }, 3000)
 }
 
-// 处理账号问卷提交
-const handleAccountSurveySubmit = () => {
-  showAccountSurvey.value = false
-  // 继续进入第二步
-  currentStep.value = 2
-  showHeader.value = true
-  window.history.pushState({ page: 'tutorial', step: 2 }, '', '#step2')
+// GSAP Animations
+const animateHero = () => {
+  gsap.fromTo('.hero-anim', 
+    { y: 60, opacity: 0, filter: 'blur(10px)' },
+    { y: 0, opacity: 1, filter: 'blur(0px)', duration: 1.2, stagger: 0.1, ease: 'power3.out' }
+  )
+}
+
+const animateTutorial = () => {
+  gsap.fromTo('.bento-item',
+    { y: 30, opacity: 0, scale: 0.98 },
+    { y: 0, opacity: 1, scale: 1, duration: 0.8, stagger: 0.08, ease: 'back.out(1.2)', clearProps: "transform" }
+  )
+}
+
+const getStepFromHash = () => {
+  const match = window.location.hash.match(/^#step([1-5])$/)
+  if (!match) return null
+  const step = Number(match[1])
+  return step >= 1 && step <= STEP_COUNT ? step : null
+}
+
+const syncRouteState = () => {
+  const step = getStepFromHash()
+  if (step) {
+    showHero.value = false
+    showTutorial.value = true
+    currentStep.value = step
+    showHeader.value = true
+    scheduleHeaderHide()
+  } else {
+    showHero.value = true
+    showTutorial.value = false
+    currentStep.value = 1
+    showHeader.value = true
+    if (headerHideTimer) {
+      clearTimeout(headerHideTimer)
+      headerHideTimer = null
+    }
+  }
+  
+  nextTick(() => {
+    if (showHero.value) animateHero()
+    if (showTutorial.value) animateTutorial()
+  })
+}
+
+// Watch step changes to trigger animation
+watch(currentStep, () => {
+  nextTick(() => { animateTutorial() })
+})
+
+const navigateToStep = (step) => {
+  const nextHash = `#step${step}`
+  if (window.location.hash === nextHash) {
+    syncRouteState()
+    return
+  }
+  window.location.hash = nextHash
+}
+
+const navigateHome = () => {
+  const cleanUrl = `${window.location.pathname}${window.location.search}`
+  window.history.pushState(null, '', cleanUrl)
+  syncRouteState()
 }
 
 const materials = ref([
@@ -55,34 +114,22 @@ const materialsProgress = computed(() => {
   return `已完成 ${done} / ${materials.value.length} 项`
 })
 
-const goToMaterials = () => {
-  // 显示基础信息问卷
-  showBasicSurveyModal()
+const goToMaterials = () => { 
+  showMaterialsModal.value = true
 }
 const closeMaterials = () => { showMaterialsModal.value = false }
 const nextStep = () => { 
   showMaterialsModal.value = false
   materialsStep.value = 1
-  showHero.value = false
-  showTutorial.value = true
-  window.history.pushState({ page: 'tutorial', step: 1 }, '', '#step1')
+  navigateToStep(1)
 }
 
 const goToStep = (step) => {
-  // 如果从第一步进入第二步，显示账号信息问卷
-  if (currentStep.value === 1 && step === 2) {
-    showAccountSurveyModal()
-    // 不立即切换步骤，等用户填写完问卷后再切换
+  if (currentStep.value === 2 && step === 3) {
+    showCombinedSurveyModal()
     return
   }
-
-  currentStep.value = step
-  showHeader.value = true
-  window.history.pushState({ page: 'tutorial', step }, '', `#step${step}`)
-  // 3秒后自动隐藏导航栏
-  setTimeout(() => {
-    showHeader.value = false
-  }, 3000)
+  navigateToStep(step)
 }
 
 const getStepLabel = (step) => {
@@ -91,504 +138,274 @@ const getStepLabel = (step) => {
 }
 
 const getStepTitle = (step) => {
-  const titles = [
-    'SHEIN 商家注册',
-    '店铺资料填写',
-    '选品与上架',
-    '营销活动报名',
-    '发货与物流'
-  ]
+  const titles = ['SHEIN 商家注册', '店铺资料填写', '选品与上架', '营销活动报名', '发货与物流']
   return titles[step - 1] || ''
 }
 
-const goToStep1 = () => goToStep(1)
-const goToStep2 = () => goToStep(2)
-const goToStep3 = () => goToStep(3)
-const goToStep4 = () => goToStep(4)
-const goToStep5 = () => goToStep(5)
-
-const handlePopState = (event) => {
-  if (event.state) {
-    if (event.state.page === 'tutorial') {
-      showHero.value = false
-      showTutorial.value = true
-      currentStep.value = event.state.step || 1
-    } else if (event.state.page === 'home') {
-      showHero.value = true
-      showTutorial.value = false
-    }
-  }
-}
-
 onMounted(() => {
-  window.addEventListener('popstate', handlePopState)
-  window.history.replaceState({ page: 'home' }, '', '/')
+  window.addEventListener('hashchange', syncRouteState)
+  syncRouteState()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('popstate', handlePopState)
+  window.removeEventListener('hashchange', syncRouteState)
+  if (headerHideTimer) clearTimeout(headerHideTimer)
 })
-
-const downloadUrl = 'https://erp.91miaoshou.com/api/app/views/static/plugin/kuajing-erp-plugin-v3.zip'
-const downloadForChrome = () => {
-  const link = document.createElement('a')
-  link.href = downloadUrl
-  link.download = ''
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
-const downloadForEdge = () => {
-  const link = document.createElement('a')
-  link.href = downloadUrl
-  link.download = ''
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
 </script>
 
 <template>
-  <div v-if="showHero" class="hero-page">
-    <div class="hero-container">
-      <div class="company-brand">
-        <img src="/companylogo.jpg" alt="Company Logo" class="company-logo" />
-      </div>
-      <h1 class="hero-title">SHEIN 商家入驻标准流程</h1>
-      <p class="hero-subtitle">一站式开店指引，助您轻松开启跨境之旅</p>
-      <div class="hero-features">
-        <div class="feature-item">
-          <div class="feature-icon">📋</div>
-          <div class="feature-text">材料准备清单</div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">📖</div>
-          <div class="feature-text">图文视频教程</div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">🛠️</div>
-          <div class="feature-text">工具下载指引</div>
-        </div>
-      </div>
-      <button class="primary-btn hero-btn" @click="goToMaterials">我要开店</button>
-    </div>
-  </div>
-  <div v-if="showTutorial" class="tutorial-section">
-    <!-- 顶部触发区域（仅8px高度） -->
-    <div class="header-trigger-zone" @mouseenter="showHeader = true">
-      <div class="trigger-hint">
-        <div class="trigger-dot"></div>
-      </div>
-    </div>
+  <div class="relative w-full min-h-screen text-brand-900 font-sans tracking-tight">
     
-    <!-- 隐藏式顶部导航（绝对定位，不占用文档流） -->
-    <transition name="header-slide">
-      <div v-show="showHeader" class="tutorial-header" @mouseleave="showHeader = false">
-        <div class="header-main">
-          <div class="header-title">
-            <span class="title-badge">步骤 {{ currentStep }}/5</span>
-            <h2 class="title-text">{{ getStepTitle(currentStep) }}</h2>
-          </div>
-          <div class="header-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: (currentStep / 5 * 100) + '%' }"></div>
-            </div>
-            <span class="progress-text">已完成 {{ currentStep }}/5</span>
+    <!-- Hero View -->
+    <div v-if="showHero" class="flex items-center justify-center min-h-screen p-6 relative z-10">
+      <div class="glass max-w-3xl w-full p-12 md:p-16 rounded-[2.5rem] flex flex-col items-center text-center border-t border-white/80 shadow-2xl relative overflow-hidden group">
+        <!-- Shine effect -->
+        <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent opacity-0 group-hover:opacity-100 transform -translate-x-full group-hover:translate-x-full transition-all duration-1000 ease-in-out pointer-events-none"></div>
+
+        <div class="hero-anim mb-8">
+          <div class="p-4 bg-white/50 backdrop-blur-md rounded-3xl shadow-lg border border-white/60 inline-block transition-transform hover:scale-105 duration-300">
+            <img :src="`${staticBaseUrl}companylogo.jpg`" alt="Company Logo" class="h-16 w-auto mix-blend-multiply object-contain rounded-xl" />
           </div>
         </div>
         
-        <!-- 步骤导航标签 -->
-        <div class="step-tabs">
-          <button 
-            v-for="step in 5" 
-            :key="step"
-            class="step-tab"
-            :class="{ 
-              'active': currentStep === step, 
-              'completed': currentStep > step 
-            }"
-            @click="goToStep(step)"
-          >
-            <span class="tab-number">{{ step }}</span>
-            <span class="tab-label">{{ getStepLabel(step) }}</span>
-            <span v-if="currentStep > step" class="tab-check">✓</span>
+        <h1 class="hero-anim text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-brand-900 via-brand-600 to-indigo-900 mb-6 tracking-tight leading-tight whitespace-nowrap">
+          SHEIN 商家入驻标准流程
+        </h1>
+        <p class="hero-anim text-lg md:text-xl text-slate-600 mb-12 font-medium max-w-xl leading-relaxed">
+          一站式开店指引，采用反重力极简设计，助您优雅开启跨境之旅。
+        </p>
+
+        <div class="hero-anim grid grid-cols-3 gap-4 mb-12 w-full max-w-2xl mx-auto">
+          <div v-for="(feat, idx) in [{i:'📋', t:'材料准备清单'}, {i:'📖', t:'图文视频教程'}, {i:'🛠️', t:'工具下载指引'}]" :key="idx" 
+               class="glass-card flex flex-col items-center justify-center gap-3 p-4 rounded-2xl hover:-translate-y-1 transition-transform duration-300 cursor-default text-center">
+            <span class="text-3xl sm:text-4xl filter drop-shadow-sm">{{feat.i}}</span>
+            <span class="text-xs sm:text-sm font-semibold text-slate-700 leading-tight">{{feat.t}}</span>
+          </div>
+        </div>
+
+        <button @click="goToMaterials" 
+                class="hero-anim group relative inline-flex items-center justify-center px-10 py-5 text-lg font-bold text-white transition-all duration-300 bg-brand-600 rounded-full hover:bg-brand-500 hover:scale-105 hover:shadow-[0_0_40px_-10px_rgba(37,99,235,0.6)] focus:outline-none focus:ring-4 focus:ring-brand-500/30 overflow-hidden">
+          <span class="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black"></span>
+          <span class="relative flex items-center gap-2">我要开店</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tutorial View -->
+    <div v-if="showTutorial" class="flex flex-col min-h-screen relative z-10 pt-8 pb-32 px-4 md:px-8 max-w-[1600px] mx-auto">
+      
+      <!-- Hidden Header trigger -->
+      <div class="fixed top-0 left-0 right-0 h-4 z-[90] cursor-pointer group" @mouseenter="showHeader = true">
+         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-1.5 bg-slate-300/50 rounded-b-lg group-hover:bg-slate-400/60 transition-colors"></div>
+      </div>
+
+      <!-- Navigation Header -->
+      <transition enter-active-class="transition duration-300 ease-out"
+                  enter-from-class="transform -translate-y-full opacity-0"
+                  enter-to-class="transform translate-y-0 opacity-100"
+                  leave-active-class="transition duration-200 ease-in"
+                  leave-from-class="transform translate-y-0 opacity-100"
+                  leave-to-class="transform -translate-y-full opacity-0">
+        <div v-show="true" class="glass fixed top-4 left-4 right-4 md:left-auto md:right-auto md:w-[90%] md:mx-auto max-w-6xl rounded-2xl z-[100] p-4 flex flex-col md:flex-row shadow-2xl items-center justify-between gap-4 border border-white/40">
+          
+          <div class="flex items-center gap-4 w-full md:w-auto">
+             <div class="bg-gradient-to-r from-brand-500 to-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-inner">步 骤 {{currentStep}}/5</div>
+             <h2 class="text-xl font-extrabold text-slate-800 tracking-tight m-0">{{ getStepTitle(currentStep) }}</h2>
+          </div>
+
+          <div class="flex flex-1 w-full justify-end max-w-2xl gap-2 overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+            <button v-for="step in 5" :key="step" @click="goToStep(step)"
+              class="relative flex-1 min-w-[100px] flex flex-col items-center justify-center p-2 rounded-xl border border-transparent transition-all duration-300 overflow-hidden group"
+              :class="[
+                currentStep === step ? 'bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/30 scale-105' : 
+                currentStep > step ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 
+                'bg-white/50 text-slate-500 hover:bg-white/80 hover:scale-[1.02]'
+              ]">
+              <span class="text-xs font-bold opacity-80 mb-0.5">STEP {{step}}</span>
+              <span class="text-sm font-medium whitespace-nowrap">{{ getStepLabel(step) }}</span>
+              <!-- progress bar indicator overlay -->
+              <div v-if="currentStep === step" class="absolute bottom-0 left-0 h-1 bg-white/40 animate-pulse w-full"></div>
+            </button>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Grid Bento Box System -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full mt-24 flex-grow">
+        
+        <!-- Main Content Panel (PDF) -->
+        <div class="lg:col-span-8 flex flex-col glass-card rounded-[2rem] p-4 border border-white/60 shadow-xl overflow-hidden bento-item h-[70vh] min-h-[600px] relative group">
+          <div class="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent pointer-events-none z-10 h-24"></div>
+          <h3 class="text-lg font-bold text-slate-800 mb-4 px-2 relative z-20 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand-500"></span> 官方权威指南</h3>
+          <div class="flex-1 rounded-2xl overflow-hidden bg-slate-100/50 inner-shadow relative z-20">
+            <iframe class="w-full h-full border-none" :src="`/shein/shein-guide${currentStep > 1 ? currentStep : ''}.pdf`"></iframe>
+          </div>
+        </div>
+
+        <!-- Sidebar Components -->
+        <div class="lg:col-span-4 flex flex-col gap-6 bento-item h-[70vh] min-h-[600px]">
+          
+          <!-- Video Box -->
+          <div class="glass-card rounded-[2rem] p-4 flex flex-col border border-white/60 shadow-xl flex-shrink-0 relative overflow-hidden group">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 px-2 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> 视频教程</h3>
+            <div class="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-700/50 shadow-inner relative flex items-center justify-center">
+               <template v-if="currentStep === 3">
+                  <iframe class="w-full h-full absolute inset-0" src="https://player.bilibili.com/player.html?bvid=BV1A4cXzzEVm&page=1&high_quality=1&danmaku=0" scrolling="no" border="0" frameborder="no" allowfullscreen="true"></iframe>
+               </template>
+               <template v-else-if="currentStep === 4">
+                  <iframe class="w-full h-full absolute inset-0" src="https://player.bilibili.com/player.html?bvid=BV1a4P4zWEbo&page=1&high_quality=1&danmaku=0" scrolling="no" border="0" frameborder="no" allowfullscreen="true"></iframe>
+               </template>
+               <template v-else-if="currentStep === 5">
+                  <iframe class="w-full h-full absolute inset-0" src="https://player.bilibili.com/player.html?bvid=BV1GPNFzEEC9&page=1&high_quality=1&danmaku=0" scrolling="no" border="0" frameborder="no" allowfullscreen="true"></iframe>
+               </template>
+               <template v-else>
+                  <p class="text-white/50 font-medium z-10 flex flex-col items-center gap-2">
+                    <svg class="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    视频制作中...
+                  </p>
+               </template>
+            </div>
+          </div>
+
+          <!-- Tools / Info Box -->
+          <div class="glass-card rounded-[2rem] p-6 flex-1 border border-white/60 shadow-xl overflow-y-auto flex flex-col">
+            <h4 class="text-xs font-extrabold text-slate-400 tracking-wider uppercase mb-4">相关资源与工具</h4>
+            
+            <div class="grid grid-cols-2 gap-3" v-if="currentStep === 1">
+              <a href="https://www.zhanfubrowser.com/register/?code=3262" target="_blank" class="group flex flex-col bg-white/60 items-center justify-center gap-2 p-4 rounded-2xl hover:bg-white transition-all shadow-sm hover:shadow-md border border-white hover:border-brand-200">
+                <img :src="`${staticBaseUrl}zf-logo.svg`" alt="战斧浏览器" class="h-10 w-auto object-contain transition-transform group-hover:scale-110" />
+                <span class="text-xs font-semibold text-slate-700">战斧浏览器</span>
+              </a>
+              <a href="https://shein.top/bbcumlm" target="_blank" class="group flex flex-col bg-white/60 items-center justify-center gap-2 p-4 rounded-2xl hover:bg-white transition-all shadow-sm hover:shadow-md border border-white hover:border-brand-200">
+                <img :src="`${staticBaseUrl}shein-s.svg`" alt="SHEIN" class="h-10 w-auto object-contain transition-transform group-hover:scale-110" />
+                <span class="text-xs font-semibold text-slate-700">商家注册</span>
+              </a>
+            </div>
+
+            <div class="flex flex-col gap-2" v-if="currentStep === 2">
+              <div class="bg-white/50 backdrop-blur rounded-2xl p-4 border border-white/80 shadow-sm text-sm text-slate-600 font-mono space-y-2">
+                <div class="flex"><span class="w-16 text-slate-400 font-bold">仓库</span><span class="text-slate-800">纽约美东仓库</span></div>
+                <div class="flex"><span class="w-16 text-slate-400 font-bold">姓名</span><span class="text-slate-800">JOHN LEAVY</span></div>
+                <div class="flex"><span class="w-16 text-slate-400 font-bold">邮编</span><span class="text-slate-800">11413</span></div>
+                <div class="flex"><span class="w-16 text-slate-400 font-bold">手机</span><span class="text-slate-800">（+1）123456789(随便写满足位数要求即可)</span></div>
+                <div class="flex"><span class="w-16 text-slate-400 font-bold">省市</span><span class="text-slate-800">NY, JAMAICA</span></div>
+                <div class="flex"><span class="w-16 text-slate-400 font-bold">邮箱</span><span class="text-slate-800">XXXXXX@gmail.com</span></div>
+                <div class="flex mt-2"><span class="w-16 text-slate-400 font-bold">地址</span><span class="text-slate-800">133-11 FRANCLS LEWIS BLVD</span></div>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-4" v-if="currentStep === 3">
+               <div class="grid grid-cols-3 gap-3">
+                 <a href="https://erp.91miaoshou.com/" target="_blank" class="group flex flex-col bg-white/60 items-center justify-center gap-2 p-4 rounded-2xl hover:bg-white transition-all shadow-sm hover:shadow-md border border-white hover:border-brand-200">
+                  <img :src="`${staticBaseUrl}miaoshou-logo.jpg`" alt="妙手ERP" class="h-10 w-auto rounded object-contain transition-transform group-hover:scale-110" />
+                  <span class="text-xs font-semibold text-slate-700">妙手ERP</span>
+                 </a>
+                 <a href="https://erp.91miaoshou.com/sid/Gx0iMm" target="_blank" class="group flex flex-col bg-white/60 items-center justify-center gap-2 p-4 rounded-2xl hover:bg-white transition-all shadow-sm hover:shadow-md border border-white hover:border-brand-200">
+                  <img :src="`${staticBaseUrl}miaoshou-logo.jpg`" alt="妙手分销" class="h-10 w-auto rounded object-contain transition-transform group-hover:scale-110 saturate-150 hue-rotate-15" />
+                  <span class="text-xs font-semibold text-slate-700">妙手分销</span>
+                 </a>
+                 <a href="https://us.shein.com/" target="_blank" class="group flex flex-col bg-white/60 items-center justify-center gap-2 p-4 rounded-2xl hover:bg-white transition-all shadow-sm hover:shadow-md border border-white hover:border-brand-200">
+                  <img :src="`${staticBaseUrl}shein-s.svg`" alt="SHEIN官网" class="h-10 w-auto object-contain transition-transform group-hover:scale-110" />
+                  <span class="text-xs font-semibold text-slate-700">SHEIN官网</span>
+                 </a>
+               </div>
+               <a href="https://erp.91miaoshou.com/api/app/views/static/plugin/kuajing-erp-plugin-v3.zip" download class="group flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100 hover:border-blue-300 transition-all shadow-sm hover:shadow text-slate-700">
+                 <span class="text-2xl bg-white w-10 h-10 rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">🧩</span>
+                 <div class="flex flex-col">
+                   <span class="font-bold text-sm text-brand-700">下载插件</span>
+                   <span class="text-xs text-slate-500">妙手ERP插件 V3.zip</span>
+                 </div>
+               </a>
+            </div>
+
+            <div class="flex flex-col gap-4" v-if="currentStep === 5">
+               <div class="grid grid-cols-3 gap-2">
+                 <a :href="`${staticBaseUrl}honglian-plugin.zip`" download class="flex flex-col items-center gap-2 bg-white/60 p-3 rounded-xl hover:bg-white hover:shadow-md transition-all text-center group">
+                   <img :src="`${staticBaseUrl}honglian-icon.png`" class="w-8 h-8 rounded group-hover:scale-110 transition-transform"/>
+                   <span class="text-[10px] font-bold text-slate-600">订单插件</span>
+                 </a>
+                  <a :href="`${staticBaseUrl}honglian-config.json`" download class="flex flex-col items-center gap-2 bg-white/60 p-3 rounded-xl hover:bg-white hover:shadow-md transition-all text-center group">
+                   <span class="text-2xl group-hover:scale-110 transition-transform group-hover:rotate-45">⚙️</span>
+                   <span class="text-[10px] font-bold text-slate-600">配置文件</span>
+                 </a>
+                 <a :href="`${staticBaseUrl}track123-template.xlsx`" download class="flex flex-col items-center gap-2 bg-white/60 p-3 rounded-xl hover:bg-white hover:shadow-md transition-all text-center group">
+                   <span class="text-2xl group-hover:scale-110 transition-transform">📊</span>
+                   <span class="text-[10px] font-bold text-slate-600">Track123模板</span>
+                 </a>
+               </div>
+               <div class="grid grid-cols-3 gap-2 mt-2">
+                 <a href="https://wl.wwerp.cc/orders" target="_blank" class="flex flex-col items-center gap-2 bg-slate-50 border border-slate-200 p-2 rounded-xl hover:border-brand-300 transition-all text-center">
+                   <span class="text-xl">📦</span><span class="text-[10px] font-medium">物流平台</span>
+                 </a>
+                 <a href="https://kj.qizhishangke.com/user/login" target="_blank" class="flex flex-col items-center gap-2 bg-slate-50 border border-slate-200 p-2 rounded-xl hover:border-brand-300 transition-all text-center">
+                   <img :src="`${staticBaseUrl}wdt-logo.png`" class="h-6 object-contain"/><span class="text-[10px] font-medium">旺店通ERP</span>
+                 </a>
+                 <a href="https://member.track123.com/login?lang=zh" target="_blank" class="flex flex-col items-center gap-2 bg-slate-50 border border-slate-200 p-2 rounded-xl hover:border-brand-300 transition-all text-center">
+                   <img :src="`${staticBaseUrl}track123-logo.png`" class="h-6 object-contain"/><span class="text-[10px] font-medium">Track123</span>
+                 </a>
+               </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Bottom Nav -->
+      <div class="fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 z-50 p-2 glass rounded-full shadow-2xl border-white/60 bento-item">
+        <button v-if="currentStep > 1" @click="goToStep(currentStep - 1)" class="px-6 py-2.5 rounded-full text-sm font-bold text-slate-600 hover:text-brand-600 bg-white/50 hover:bg-white transition-all border border-transparent hover:border-brand-200 hover:shadow-md">
+           ← 上一步
+        </button>
+        <button v-if="currentStep < 5" @click="goToStep(currentStep + 1)" class="px-8 py-2.5 rounded-full text-sm font-bold text-white bg-gradient-to-r from-brand-500 to-indigo-500 hover:from-brand-400 hover:to-indigo-400 shadow-lg shadow-brand-500/30 hover:scale-105 transition-all">
+           下一步 →
+        </button>
+        <button v-if="currentStep === 5" @click="navigateHome" class="px-8 py-2.5 rounded-full text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/30 hover:scale-105 transition-all">
+           完成入驻 ✓
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Modals -->
+    <CombinedSurveyModal :show="showCombinedSurvey" @close="handleCombinedSurveyClose" @submit="handleCombinedSurveySubmit" />
+
+    <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 backdrop-blur-none" enter-to-class="opacity-100 backdrop-blur-sm" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 backdrop-blur-sm" leave-to-class="opacity-0 backdrop-blur-none">
+      <div v-if="showMaterialsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" @click="closeMaterials">
+        
+        <div class="bg-white/90 backdrop-blur-xl border border-white w-full max-w-md rounded-3xl p-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] transform transition-transform" @click.stop>
+          <button @click="closeMaterials" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 hover:rotate-90 transition-transform">
+             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
+          
+          <h2 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center gap-3">清单确认 <span class="text-brand-500 text-sm bg-brand-50 px-3 py-1 rounded-full">{{materialsStep}}/1</span></h2>
+          
+          <div class="space-y-3 mb-6">
+            <label v-for="material in materials" :key="material.id" class="flex flex-row items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-brand-50 hover:border-brand-200 transition-colors group">
+               <div class="relative flex items-center justify-center pt-0.5">
+                 <input type="checkbox" v-model="material.checked" class="w-5 h-5 opacity-0 absolute z-10 cursor-pointer peer">
+                 <div class="w-5 h-5 rounded border-2 border-slate-300 peer-checked:bg-brand-500 peer-checked:border-brand-500 transition-colors flex items-center justify-center">
+                   <svg class="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                 </div>
+               </div>
+               <span class="text-sm font-medium text-slate-600 leading-snug flex-1 group-hover:text-brand-900 transition-colors mt-0.5">{{ material.text }}</span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between mt-8">
+            <span class="text-xs font-bold text-slate-400 tracking-wide">{{ materialsProgress }}</span>
+            <button @click="nextStep" class="px-8 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 hover:scale-105 transition-all">
+              已完成
+            </button>
+          </div>
         </div>
       </div>
     </transition>
-    
-    <div v-if="currentStep === 1">
-      <div class="tutorial-layout">
-        <div class="pdf-panel">
-          <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein/shein-guide.pdf"></iframe>
-        </div>
-        <div class="video-panel">
-          <h3>视频教程</h3>
-          <div class="placeholder-box video-placeholder">
-            <p>视频教程准备中...</p>
-            <p class="placeholder-hint">即将上线</p>
-          </div>
-          <div class="tools-section">
-            <h4>相关链接</h4>
-            <div class="tools-grid">
-              <a href="https://www.zhanfubrowser.com/register/?code=3262" target="_blank" class="tool-item">
-                <img src="/zf-logo.svg" alt="战斧浏览器" class="tool-icon" style="width: 100px; height: 70px;" />
-                <span class="tool-name">战斧浏览器</span>
-              </a>
-              <a href="https://shein.top/bbcumlm" target="_blank" class="tool-item">
-                <img src="/shein-s.svg" alt="SHEIN" class="tool-icon small" />
-                <span class="tool-name">SHEIN商家注册</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="currentStep === 2">
-      <div class="tutorial-layout">
-        <div class="pdf-panel">
-          <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein/shein-guide2.pdf"></iframe>
-        </div>
-        <div class="video-panel">
-          <h3>视频教程</h3>
-          <div class="placeholder-box video-placeholder">
-            <p>视频教程准备中...</p>
-            <p class="placeholder-hint">即将上线</p>
-          </div>
-          <div class="tools-section">
-            <h4>参考信息</h4>
-            <div class="info-box compact">
-              <div class="info-row"><span class="info-label">仓库：</span>纽约美东仓库</div>
-              <div class="info-row"><span class="info-label">姓名：</span>JOHN LEAVY</div>
-              <div class="info-row"><span class="info-label">邮编：</span>11413</div>
-              <div class="info-row"><span class="info-label">手机：</span>（+1）123456789</div>
-              <div class="info-row"><span class="info-label">省份：</span>NY</div>
-              <div class="info-row"><span class="info-label">城市：</span>JAMAICA</div>
-              <div class="info-row"><span class="info-label">地址：</span>133-11 FRANCLS LEWIS BLVD</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="currentStep === 3">
-      <div class="tutorial-layout">
-        <div class="pdf-panel">
-          <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein/shein-guide3.pdf"></iframe>
-        </div>
-        <div class="video-panel">
-          <h3>视频教程</h3>
-          <div class="placeholder-box video-placeholder">
-            <p>视频教程准备中...</p>
-            <p class="placeholder-hint">即将上线</p>
-          </div>
-          <div class="tools-section">
-            <h4>推荐工具</h4>
-            <div class="tools-grid">
-              <a href="https://erp.91miaoshou.com/" target="_blank" class="tool-item">
-                <img src="/miaoshou-logo.jpg" alt="妙手ERP" class="tool-icon" style="width: 80px; height: 80px;" />
-                <span class="tool-name">妙手ERP</span>
-              </a>
-              <a href="https://us.shein.com/" target="_blank" class="tool-item">
-                <img src="/shein-s.svg" alt="SHEIN" class="tool-icon small" />
-                <span class="tool-name">SHEIN官网</span>
-              </a>
-            </div>
-          </div>
-          <div class="tools-section">
-            <h4>插件下载</h4>
-            <div class="tools-grid">
-              <a href="https://erp.91miaoshou.com/api/app/views/static/plugin/kuajing-erp-plugin-v3.zip" download class="tool-item download">
-                <span class="tool-icon emoji">🧩</span>
-                <span class="tool-name">妙手ERP插件</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="currentStep === 4">
-      <div class="tutorial-layout">
-        <div class="pdf-panel">
-          <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein/shein-guide4.pdf"></iframe>
-        </div>
-        <div class="video-panel">
-          <h3>视频教程</h3>
-          <iframe 
-            class="video-frame" 
-            src="https://player.bilibili.com/player.html?bvid=BV1a4P4zWEbo&page=1&high_quality=1&danmaku=0"
-            scrolling="no" 
-            border="0" 
-            frameborder="no" 
-            framespacing="0" 
-            allowfullscreen="true"
-          ></iframe>
-        </div>
-      </div>
-    </div>
-    <div v-if="currentStep === 5">
-      <div class="tutorial-layout">
-        <div class="pdf-panel">
-          <h3>PDF 图文教程</h3>
-          <iframe class="pdf-frame" src="/shein/shein-guide5.pdf"></iframe>
-        </div>
-        <div class="video-panel">
-          <h3>视频教程</h3>
-          <iframe 
-            class="video-frame" 
-            src="https://player.bilibili.com/player.html?bvid=BV1BfPQzBEUV&page=1&high_quality=1&danmaku=0"
-            scrolling="no" 
-            border="0" 
-            frameborder="no" 
-            framespacing="0" 
-            allowfullscreen="true"
-          ></iframe>
-          <div class="tools-section">
-            <h4>工具下载</h4>
-            <div class="tools-grid">
-              <a href="/honglian-plugin.zip" download class="tool-item download">
-                <img src="/honglian-icon.png" alt="订单转换插件" class="tool-icon" />
-                <span class="tool-name">订单转换插件</span>
-              </a>
-              <a href="/honglian-config.json" download class="tool-item download">
-                <span class="tool-icon emoji">⚙️</span>
-                <span class="tool-name">配置文件</span>
-              </a>
-              <a href="/track123-template.xlsx" download class="tool-item download">
-                <span class="tool-icon emoji">📊</span>
-                <span class="tool-name">Track123模板</span>
-              </a>
-            </div>
-          </div>
-          <div class="tools-section">
-            <h4>常用平台</h4>
-            <div class="tools-grid">
-              <a href="https://wl.wwerp.cc/orders" target="_blank" class="tool-item">
-                <span class="tool-icon emoji">📦</span>
-                <span class="tool-name">物流测试平台</span>
-              </a>
-              <a href="https://kj.qizhishangke.com/user/login" target="_blank" class="tool-item">
-                <img src="/wdt-logo.png" alt="旺店通" class="tool-icon" style="width: 80px; height: 80px;" />
-                <span class="tool-name">旺店通ERP</span>
-              </a>
-              <a href="https://member.track123.com/login?lang=zh" target="_blank" class="tool-item">
-                <img src="/track123-logo.png" alt="Track123" class="tool-icon" style="width: 80px; height: 80px;" />
-                <span class="tool-name">Track123</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 浮动导航按钮 -->
-    <div class="floating-nav">
-      <button 
-        v-if="currentStep > 1" 
-        class="floating-btn prev" 
-        @click="goToStep(currentStep - 1)"
-      >
-        ← 上一步
-      </button>
-      <button 
-        v-if="currentStep < 5" 
-        class="floating-btn next" 
-        @click="goToStep(currentStep + 1)"
-      >
-        下一步 →
-      </button>
-      <button 
-        v-if="currentStep === 5" 
-        class="floating-btn complete" 
-        @click="showHero = true; showTutorial = false"
-      >
-        完成 ✓
-      </button>
-    </div>
-  </div>
-  
-  <!-- 基础信息问卷（点击"我要开店"后弹出） -->
-  <BasicSurveyModal
-    :show="showBasicSurvey"
-    @close="showBasicSurvey = false; showMaterialsModal = true"
-    @submit="showBasicSurvey = false; showMaterialsModal = true"
-  />
 
-  <!-- 账号信息问卷（第一步点击"下一步"后弹出） -->
-  <AccountSurveyModal
-    :show="showAccountSurvey"
-    @close="handleAccountSurveyClose"
-    @submit="handleAccountSurveySubmit"
-  />
-  
-  <div v-if="showMaterialsModal" class="modal-overlay" @click="closeMaterials">
-    <div class="modal-content" @click.stop>
-      <span class="close-btn" @click="closeMaterials">&times;</span>
-      <div v-if="materialsStep === 1">
-        <div class="modal-header"><h2>材料准备清单</h2></div>
-        <div class="detail-list">
-          <div class="materials-list">
-            <label v-for="material in materials" :key="material.id" class="material-item">
-              <input type="checkbox" v-model="material.checked">
-              <span>{{ material.text }}</span>
-            </label>
-          </div>
-          <div class="materials-progress">{{ materialsProgress }}</div>
-        </div>
-        <div class="modal-footer"><button class="primary-btn" @click="nextStep">下一步</button></div>
-      </div>
-
-    </div>
   </div>
 </template>
 
-<style scoped>
-.hero-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f7ff 0%, #e0efff 100%); padding: 20px; }
-.hero-container { max-width: 600px; width: 100%; text-align: center; background: #fff; border-radius: 24px; padding: 48px 40px; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.12); }
-.company-brand { margin-bottom: 24px; }
-.company-logo { width: 200px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-.hero-title { font-size: 32px; font-weight: 700; color: var(--text-main); margin: 0 0 12px; }
-.hero-subtitle { font-size: 16px; color: #64748b; margin: 0 0 32px; }
-.hero-features { display: flex; justify-content: center; gap: 32px; margin-bottom: 40px; flex-wrap: wrap; }
-.feature-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.feature-icon { font-size: 32px; }
-.feature-text { font-size: 14px; color: #475569; font-weight: 500; }
-.hero-btn { padding: 16px 48px; font-size: 18px; text-align: center; }
-@media (max-width: 600px) { .hero-container { padding: 32px 24px; } .hero-title { font-size: 24px; } .hero-features { gap: 20px; } }
-.hero { max-width: 1100px; width: 100%; margin-bottom: 30px; text-align: center; }
-.primary-btn { background: var(--primary-color); color: #fff; border: none; border-radius: 999px; padding: 12px 32px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25); transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease; text-decoration: none; display: inline-block; }
-.primary-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 22px rgba(37, 99, 235, 0.35); opacity: 0.95; }
-.primary-btn.dark { background: #1e293b; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); }
-.tutorial-section { width: 100%; background: #f8fafc; min-height: 100vh; position: relative; padding-top: 8px; }
-
-/* 隐藏式顶部导航 - 绝对定位 */
-.tutorial-header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 16px 24px; position: absolute; top: 0; left: 0; right: 0; z-index: 100; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); }
-
-/* 导航栏滑入滑出动画 */
-.header-slide-enter-active, .header-slide-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.header-slide-enter-from, .header-slide-leave-to { transform: translateY(-10px); opacity: 0; }
-
-/* 顶部触发区域 - 仅8px高度 */
-.header-trigger-zone { position: absolute; top: 0; left: 0; right: 0; height: 8px; z-index: 90; cursor: pointer; }
-.trigger-hint { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 60px; height: 4px; background: #cbd5e1; border-radius: 0 0 4px 4px; opacity: 0.6; transition: opacity 0.2s; }
-.header-trigger-zone:hover .trigger-hint { opacity: 1; background: #94a3b8; }
-.trigger-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: #64748b; border-radius: 50%; opacity: 0; transition: opacity 0.2s; }
-.header-trigger-zone:hover .trigger-dot { opacity: 1; }
-.header-main { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.header-title { display: flex; align-items: center; gap: 12px; }
-.title-badge { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-.title-text { font-size: 24px; font-weight: 700; color: #1e293b; margin: 0; }
-.header-progress { display: flex; align-items: center; gap: 12px; }
-.progress-bar { width: 120px; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 999px; transition: width 0.3s ease; }
-.progress-text { font-size: 13px; color: #64748b; font-weight: 500; }
-
-/* 步骤标签导航 */
-.step-tabs { max-width: 1400px; margin: 0 auto; display: flex; gap: 8px; }
-.step-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer; transition: all 0.2s ease; position: relative; }
-.step-tab:hover { border-color: #cbd5e1; background: #f8fafc; }
-.step-tab.active { background: linear-gradient(135deg, #2563eb, #3b82f6); border-color: #2563eb; color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); }
-.step-tab.completed { background: #f0fdf4; border-color: #10b981; }
-.tab-number { width: 24px; height: 24px; border-radius: 50%; background: #f1f5f9; color: #64748b; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
-.step-tab.active .tab-number { background: rgba(255, 255, 255, 0.2); color: #fff; }
-.step-tab.completed .tab-number { background: #10b981; color: #fff; }
-.tab-label { font-size: 14px; font-weight: 500; color: #475569; }
-.step-tab.active .tab-label { color: #fff; }
-.step-tab.completed .tab-label { color: #10b981; }
-.tab-check { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; background: #10b981; color: #fff; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; }
-
-/* 浮动导航按钮 */
-.floating-nav { position: fixed; bottom: 24px; right: 24px; display: flex; gap: 12px; z-index: 100; }
-.floating-btn { padding: 12px 24px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; border: none; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
-.floating-btn.prev { background: #fff; color: #475569; border: 1px solid #e2e8f0; }
-.floating-btn.prev:hover { background: #f8fafc; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); }
-.floating-btn.next { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; }
-.floating-btn.next:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); }
-.floating-btn.complete { background: linear-gradient(135deg, #10b981, #34d399); color: #fff; }
-.floating-btn.complete:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4); }
-
-.tutorial-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; max-width: 1500px; margin: 0 auto; padding: 24px; }
-.pdf-panel, .video-panel { background: #fff; border-radius: 16px; padding: 12px; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04); }
-.pdf-panel h3, .video-panel h3 { margin-top: 0; margin-bottom: 10px; font-size: 16px; color: var(--text-main); }
-.pdf-frame { width: 100%; height: calc(100vh - 120px); min-height: 600px; border: none; border-radius: 8px; }
-.video-frame { width: 100%; height: calc(100vh - 120px); min-height: 600px; border: none; border-radius: 8px; }
-.placeholder-box { width: 100%; aspect-ratio: 210 / 297; max-height: calc(100vh - 140px); border: 2px dashed #ddd; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #999; background: #fafafa; }
-.video-placeholder { aspect-ratio: 16 / 9; max-height: 50vh; min-height: 360px; }
-.placeholder-box p { margin: 8px 0; font-size: 16px; }
-.placeholder-hint { font-size: 13px !important; color: #bbb; }
-.video-frame { width: 100%; aspect-ratio: 16 / 9; max-height: 50vh; min-height: 360px; border-radius: 8px; background: #000; }
-.action-links { margin-top: 12px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-.action-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; animation: fadeIn 0.3s ease; }
-.status-badge.done { background: #e8f5e9; color: #2e7d32; }
-.status-badge svg { color: #4caf50; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-.next-step-container { margin-top: 20px; text-align: right; }
-.next-step-btn { background: linear-gradient(135deg, #2563eb, #3b82f6); font-size: 18px; padding: 14px 40px; }
-.step-nav-buttons { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 0; margin-top: 20px; }
-.miaoshou-download { margin-top: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.logo-links { display: flex; align-items: center; justify-content: center; gap: 20px; }
-.miaoshou-logo-link { display: inline-block; border-radius: 8px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.miaoshou-logo-link:hover { transform: scale(1.05); }
-.miaoshou-logo-link:hover .miaoshou-logo { box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3); }
-.miaoshou-logo { width: 150px; height: 40px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: box-shadow 0.2s ease; }
-.reg-links { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; margin-top: 24px; padding-left: 8px; }
-.reg-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; text-decoration: none; }
-.reg-link:hover { transform: translateX(4px); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); }
-.reg-logo { border-radius: 8px; object-fit: contain; }
-.reg-logo.zhanfu { width: 180px; height: 70px; }
-.reg-logo.shein { width: 50px; height: 50px; }
-.reg-logo.miaoshou { width: 180px; height: 70px; }
-.reg-logo.honglian { width: 50px; height: 50px; border-radius: 8px; object-fit: contain; }
-.reg-logo.config-icon { width: 50px; height: 50px; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; background: #f0f7ff; }
-.honglian-small { width: 30px; height: 30px; object-fit: contain; }
-.file-badge { position: absolute; bottom: -4px; right: -4px; background: #2563eb; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-.reg-logo.excel-icon { width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 28px; background: #f0fdf4; }
-.reg-logo.platform-icon { width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 28px; background: #fef3c7; }
-.reg-logo.wdt { width: 180px; height: 60px; border-radius: 8px; object-fit: contain; }
-.reg-logo.track123 { width: 180px; height: 60px; border-radius: 8px; object-fit: contain; }
-.tools-section { margin-top: 20px; }
-.tools-section h4 { margin: 0 0 12px; font-size: 14px; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-.tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-.tool-item { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 20px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); transition: all 0.2s ease; text-decoration: none; border: 1px solid transparent; }
-.tool-item:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); border-color: #e2e8f0; }
-.tool-item.download { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); }
-.tool-item.download:hover { border-color: #3b82f6; }
-.tool-icon { width: 80px; height: 80px; border-radius: 12px; object-fit: contain; }
-.tool-icon.small { width: 72px; height: 72px; }
-.tool-icon.emoji { display: flex; align-items: center; justify-content: center; font-size: 32px; background: #f8fafc; }
-.tool-name { font-size: 13px; color: var(--text-main); font-weight: 500; text-align: center; line-height: 1.3; }
-.info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-top: 20px; }
-.info-box.compact { padding: 12px 16px; margin-top: 0; }
-.info-box h4 { margin: 0 0 12px; font-size: 16px; color: var(--text-main); border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
-.info-row { font-size: 13px; color: #475569; line-height: 1.6; display: flex; gap: 4px; }
-.info-label { font-weight: 600; color: var(--text-main); white-space: nowrap; }
-.miaoshou-btn { background: linear-gradient(135deg, #1e293b, #334155); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); }
-.miaoshou-btn:hover { box-shadow: 0 12px 22px rgba(0, 0, 0, 0.35); }
-.browser-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: flex-start; padding-left: 8px; margin-top: 16px; }
-.browser-btn { background: #fff; border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; }
-.browser-btn:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
-.browser-logo { width: 40px; height: 40px; border-radius: 4px; object-fit: contain; display: block; }
-.browser-label { font-size: 12px; color: #333; font-weight: 500; white-space: nowrap; }
-.primary-btn.outline { background: transparent; color: var(--primary-color); border: 2px solid var(--primary-color); box-shadow: none; }
-.primary-btn.outline:hover { background: #eff6ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); }
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background: white; width: 90%; max-width: 500px; border-radius: 20px; padding: 35px; position: relative; animation: slideIn 0.3s ease; }
-@keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.close-btn { position: absolute; top: 20px; right: 20px; font-size: 24px; color: #999; cursor: pointer; }
-.modal-header { border-bottom: 2px solid #f5f5f5; padding-bottom: 15px; margin-bottom: 20px; }
-.modal-header h2 { margin: 0; color: var(--primary-color); }
-.modal-desc { color: #666; margin: 20px 0; }
-.modal-footer { text-align: right; margin-top: 10px; }
-.detail-list { text-align: left; background: #f9f9f9; padding: 15px 20px; border-radius: 10px; margin-bottom: 25px; line-height: 1.8; color: #444; }
-.materials-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
-.material-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #fafafa; border: 1px solid #eee; font-size: 14px; color: #444; cursor: pointer; }
-.material-item input[type="checkbox"] { width: 16px; height: 16px; }
-.materials-progress { font-size: 13px; color: #999; text-align: right; }
-@media (max-width: 900px) { .tutorial-layout { grid-template-columns: 1fr; } .pdf-frame { max-height: 70vh; } }
+<style>
+/* Custom utility extensions if needed, like hiding scrollbars carefully */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.inner-shadow { box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); }
 </style>
