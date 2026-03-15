@@ -1,5 +1,6 @@
-import { defineConfig } from 'vite'
+﻿import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
 
 const buildTime = Date.now()
 
@@ -8,6 +9,11 @@ export default defineConfig({
   base: '/shein/',
   build: {
     rollupOptions: {
+      input: {
+        portal: resolve(__dirname, 'index.html'),
+        shein: resolve(__dirname, 'shein.html'),
+        ozon: resolve(__dirname, 'ozon.html')
+      },
       output: {
         entryFileNames: `assets/index-${buildTime}.js`,
         chunkFileNames: `assets/[name]-${buildTime}.js`,
@@ -18,8 +24,8 @@ export default defineConfig({
             return `assets/index-${buildTime}[extname]`
           }
           return `assets/[name]-${buildTime}[extname]`
-        },
-      },
-    },
-  },
+        }
+      }
+    }
+  }
 })
