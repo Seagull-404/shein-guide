@@ -65,14 +65,54 @@ async function getAccessToken() {
   });
 }
 
-// 写入飞书表格
-async function writeToFeishuTable(record) {
+// 通过访客ID查找记录
+async function findRecordByVisitorId(visitorId) {
   const token = await getAccessToken();
 
-  // 验证配置
-  if (!FEISHU_CONFIG.baseId || !FEISHU_CONFIG.tableId) {
-    throw new Error('飞书配置缺失：baseId 或 tableId 为空');
-  }
+  return new Promise((resolve, reject) => {
+    const filter = JSON.stringify({
+      conditions: [{
+        field_name: '访客ID',
+        operator: 'is',
+        value: [visitorId]
+      }]
+    });
+
+    const options = {
+      hostname: 'open.feishu.cn',
+      port: 443,
+      path: `/open-apis/bitable/v1/apps/${FEISHU_CONFIG.baseId}/tables/${FEISHU_CONFIG.tableId}/records?filter=${encodeURIComponent(filter)}`,
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (result.code === 0 && result.data && result.data.items && result.data.items.length > 0) {
+            resolve(result.data.items[0].record_id);
+          } else {
+            resolve(null);
+          }
+        } catch (e) {
+          reject(new Error(`解析查找响应失败: ${e.message}`));
+        }
+      });
+    });
+
+    req.on('error', (e) => reject(new Error(`查找记录失败: ${e.message}`)));
+    req.end();
+  });
+}
+
+// 创建新记录
+async function createFeishuRecord(record) {
+  const token = await getAccessToken();
 
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify({
@@ -100,15 +140,59 @@ async function writeToFeishuTable(record) {
           if (result.code === 0) {
             resolve(result.data);
           } else {
-            reject(new Error(`写入表格失败: ${result.msg} (code: ${result.code})`));
+            reject(new Error(`创建记录失败: ${result.msg} (code: ${result.code})`));
           }
         } catch (e) {
-          reject(new Error(`解析表格响应失败: ${e.message}`));
+          reject(new Error(`解析创建响应失败: ${e.message}`));
         }
       });
     });
 
-    req.on('error', (e) => reject(new Error(`请求表格失败: ${e.message}`)));
+    req.on('error', (e) => reject(new Error(`创建记录失败: ${e.message}`)));
+    req.write(postData);
+    req.end();
+  });
+}
+
+// 更新已有记录
+async function updateFeishuRecord(recordId, record) {
+  const token = await getAccessToken();
+
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({
+      fields: record.fields
+    });
+
+    const options = {
+      hostname: 'open.feishu.cn',
+      port: 443,
+      path: `/open-apis/bitable/v1/apps/${FEISHU_CONFIG.baseId}/tables/${FEISHU_CONFIG.tableId}/records/${recordId}`,
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (result.code === 0) {
+            resolve(result.data);
+          } else {
+            reject(new Error(`更新记录失败: ${result.msg} (code: ${result.code})`));
+          }
+        } catch (e) {
+          reject(new Error(`解析更新响应失败: ${e.message}`));
+        }
+      });
+    });
+
+    req.on('error', (e) => reject(new Error(`更新记录失败: ${e.message}`)));
     req.write(postData);
     req.end();
   });
@@ -166,16 +250,38 @@ export default async function handler(req, res) {
       return;
     }
 
-    const result = await writeToFeishuTable(record);
-    console.log('写入成功:', JSON.stringify(result, null, 2));
+    const visitorId = record.fields['访客ID'];
+    if (!visitorId) {
+      res.status(400).json({
+        success: false,
+        error: '请求格式错误：缺少访客ID'
+      });
+      return;
+    }
+
+    // 查找是否已有记录
+    const existingRecordId = await findRecordByVisitorId(visitorId);
+    let result;
+
+    if (existingRecordId) {
+      // 更新已有记录
+      console.log('更新已有记录:', existingRecordId);
+      result = await updateFeishuRecord(existingRecordId, record);
+    } else {
+      // 创建新记录
+      console.log('创建新记录');
+      result = await createFeishuRecord(record);
+    }
+
+    console.log('操作成功:', JSON.stringify(result, null, 2));
 
     res.status(200).json({
       success: true,
-      message: '记录已写入飞书表格',
+      message: existingRecordId ? '记录已更新' : '记录已创建',
       data: result
     });
   } catch (error) {
-    console.error('写入失败:', error);
+    console.error('操作失败:', error);
     res.status(500).json({
       success: false,
       error: error.message,

@@ -1,37 +1,97 @@
-name: Deploy to CloudBase Static Hosting
+name: CI and Deploy to Alibaba Server
 
 on:
+  pull_request:
+    branches:
+      - main
+      - clean-main
   push:
     branches:
       - main
+      - clean-main
   workflow_dispatch:
 
+env:
+  NODE_VERSION: '20'
+  DEPLOY_TMP: /tmp/shein-guide-deploy
+  DEPLOY_PATH: /var/www/html/dist
+  BACKUP_ROOT: /var/www/html/releases
+
 jobs:
-  build-and-deploy:
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Build project
-      run: npm run build
+      - name: Build project
+        run: npm run build
 
-    - name: Install CloudBase CLI
-      run: npm install -g @cloudbase/cli
+      - name: Upload dist artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
 
-    - name: Login CloudBase CLI
-      run: tcb login --apiKeyId ${{ secrets.TCB_SECRET_ID }} --apiKey ${{ secrets.TCB_SECRET_KEY }}
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'pull_request'
 
-    - name: Deploy to CloudBase Static Hosting
-      run: tcb hosting deploy ./dist /shein -e ${{ secrets.TCB_ENV_ID }}
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Upload dist to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          port: ${{ secrets.ALIYUN_PORT }}
+          source: "dist/*"
+          target: ${{ env.DEPLOY_TMP }}
+          strip_components: 1
+          overwrite: true
+
+      - name: Switch release on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          port: ${{ secrets.ALIYUN_PORT }}
+          script: |
+            set -e
+            DEPLOY_TMP="/tmp/shein-guide-deploy"
+            DEPLOY_PATH="/var/www/html/dist"
+            BACKUP_ROOT="/var/www/html/releases"
+            mkdir -p "${BACKUP_ROOT}"
+            if [ -d "${DEPLOY_PATH}" ]; then
+              mv "${DEPLOY_PATH}" "${BACKUP_ROOT}/dist_$(date +%Y%m%d_%H%M%S)"
+            fi
+            mkdir -p "${DEPLOY_PATH}"
+            cp -a "${DEPLOY_TMP}/." "${DEPLOY_PATH}/"
+            chown -R www-data:www-data "${DEPLOY_PATH}"
+            find "${DEPLOY_PATH}" -type d -exec chmod 755 {} \;
+            find "${DEPLOY_PATH}" -type f -exec chmod 644 {} \;
+            nginx -t
+            systemctl reload nginx
+            rm -rf "${DEPLOY_TMP}"
