@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   DEPLOY_TMP: /tmp/shein-guide-deploy
   DEPLOY_PATH: /var/www/html/dist
   BACKUP_ROOT: /var/www/html/releases
