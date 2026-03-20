@@ -5,14 +5,17 @@ on:
     branches:
       - main
       - clean-main
+      - codex/ozon-subproject-portal
   push:
     branches:
       - main
       - clean-main
+      - codex/ozon-subproject-portal
   workflow_dispatch:
 
 env:
   NODE_VERSION: '20'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   DEPLOY_TMP: /tmp/shein-guide-deploy
   DEPLOY_PATH: /var/www/html/dist
   BACKUP_ROOT: /var/www/html/releases
