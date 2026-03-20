@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 public/tutorial.mp4
+data/auth-db.json
+ssl/
+temp/

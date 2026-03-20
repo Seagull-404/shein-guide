@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "api": "node server/feishu-proxy.cjs",
     "build": "vite build",
     "preview": "vite preview"
   },

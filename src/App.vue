@@ -1,10 +1,12 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { useSurvey } from './composables/useSurvey'
-import CombinedSurveyModal from './components/CombinedSurveyModal.vue'
 import gsap from 'gsap'
+import AuthAccessModal from './components/AuthAccessModal.vue'
+import HomeDock from './components/HomeDock.vue'
+import { useAuth } from './composables/useAuth'
 
 const STEP_COUNT = 5
+const staticBaseUrl = import.meta.env.BASE_URL
 
 const showHero = ref(true)
 const showTutorial = ref(false)
@@ -12,31 +14,19 @@ const showMaterialsModal = ref(false)
 const materialsStep = ref(1)
 const currentStep = ref(1)
 const showHeader = ref(true)
+const showAuthModal = ref(false)
+const authMode = ref('login')
+const showVipNotice = ref(false)
+const pendingAction = ref(null)
 let headerHideTimer = null
 
-// 问卷相关
-const { isBasicFilled, isAccountFilled } = useSurvey()
-const showCombinedSurvey = ref(false)
-const staticBaseUrl = import.meta.env.BASE_URL
-
-const showCombinedSurveyModal = () => { showCombinedSurvey.value = true }
-
-const handleCombinedSurveyClose = () => {
-  showCombinedSurvey.value = false
-  navigateToStep(3)
-}
-
-const handleCombinedSurveySubmit = () => {
-  showCombinedSurvey.value = false
-  navigateToStep(3)
-}
+const { initializeAuth, isLoggedIn, hasVip } = useAuth()
 
 const scheduleHeaderHide = () => {
   if (headerHideTimer) clearTimeout(headerHideTimer)
   headerHideTimer = setTimeout(() => { showHeader.value = false }, 3000)
 }
 
-// GSAP Animations
 const animateHero = () => {
   gsap.fromTo('.hero-anim', 
     { y: 60, opacity: 0, filter: 'blur(10px)' },
@@ -47,7 +37,7 @@ const animateHero = () => {
 const animateTutorial = () => {
   gsap.fromTo('.bento-item',
     { y: 30, opacity: 0, scale: 0.98 },
-    { y: 0, opacity: 1, scale: 1, duration: 0.8, stagger: 0.08, ease: 'back.out(1.2)', clearProps: "transform" }
+    { y: 0, opacity: 1, scale: 1, duration: 0.8, stagger: 0.08, ease: 'back.out(1.2)', clearProps: 'transform' }
   )
 }
 
@@ -58,19 +48,48 @@ const getStepFromHash = () => {
   return step >= 1 && step <= STEP_COUNT ? step : null
 }
 
+const resetToHero = () => {
+  showHero.value = true
+  showTutorial.value = false
+  currentStep.value = 1
+  showHeader.value = true
+}
+
+const ensureAccess = (action) => {
+  if (!isLoggedIn.value) {
+    pendingAction.value = action
+    authMode.value = 'login'
+    showAuthModal.value = true
+    return false
+  }
+  if (!hasVip('shein')) {
+    showVipNotice.value = true
+    return false
+  }
+  showVipNotice.value = false
+  pendingAction.value = action
+  return true
+}
+
+const applyRoute = (step) => {
+  showHero.value = false
+  showTutorial.value = true
+  currentStep.value = step
+  showHeader.value = true
+  scheduleHeaderHide()
+}
+
 const syncRouteState = () => {
   const step = getStepFromHash()
   if (step) {
-    showHero.value = false
-    showTutorial.value = true
-    currentStep.value = step
-    showHeader.value = true
-    scheduleHeaderHide()
+    if (ensureAccess({ type: 'step', step })) {
+      applyRoute(step)
+    } else {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+      resetToHero()
+    }
   } else {
-    showHero.value = true
-    showTutorial.value = false
-    currentStep.value = 1
-    showHeader.value = true
+    resetToHero()
     if (headerHideTimer) {
       clearTimeout(headerHideTimer)
       headerHideTimer = null
@@ -83,8 +102,8 @@ const syncRouteState = () => {
   })
 }
 
-// Watch step changes to trigger animation
 watch(currentStep, () => {
+  if (!showTutorial.value) return
   nextTick(() => { animateTutorial() })
 })
 
@@ -104,9 +123,9 @@ const navigateHome = () => {
 }
 
 const materials = ref([
-  { id: 1, text: "身份证：法人/负责人身份证正反面照片（清晰无遮挡）", checked: false },
-  { id: 2, text: "营业执照：最新年检合格的营业执照电子版或扫描件", checked: false },
-  { id: 3, text: "手机号：一个可以正常接收短信的手机号码（建议未在 SHEIN 注册过）", checked: false }
+  { id: 1, text: '身份证：法人/负责人身份证正反面照片（清晰无遮挡）', checked: false },
+  { id: 2, text: '营业执照：最新年检合格的营业执照电子版或扫描件', checked: false },
+  { id: 3, text: '手机号：一个可以正常接收短信的手机号码（建议未在 SHEIN 注册过）', checked: false }
 ])
 
 const materialsProgress = computed(() => {
@@ -114,21 +133,19 @@ const materialsProgress = computed(() => {
   return `已完成 ${done} / ${materials.value.length} 项`
 })
 
-const goToMaterials = () => { 
+const goToMaterials = () => {
+  if (!ensureAccess({ type: 'materials' })) return
   showMaterialsModal.value = true
 }
 const closeMaterials = () => { showMaterialsModal.value = false }
-const nextStep = () => { 
+const nextStep = () => {
   showMaterialsModal.value = false
   materialsStep.value = 1
   navigateToStep(1)
 }
 
 const goToStep = (step) => {
-  if (currentStep.value === 2 && step === 3) {
-    showCombinedSurveyModal()
-    return
-  }
+  if (!ensureAccess({ type: 'step', step })) return
   navigateToStep(step)
 }
 
@@ -142,7 +159,39 @@ const getStepTitle = (step) => {
   return titles[step - 1] || ''
 }
 
-onMounted(() => {
+const currentPdfSrc = computed(() => `${staticBaseUrl}shein-guide${currentStep.value > 1 ? currentStep.value : ''}.pdf`)
+
+const handleAuthClose = () => {
+  showAuthModal.value = false
+  authMode.value = 'login'
+  pendingAction.value = null
+}
+
+const handleAuthSuccess = () => {
+  showAuthModal.value = false
+  authMode.value = 'login'
+  const action = pendingAction.value
+  pendingAction.value = null
+  if (!action) return
+  if (!hasVip('shein')) {
+    showVipNotice.value = true
+    return
+  }
+  if (action.type === 'materials') {
+    showMaterialsModal.value = true
+    return
+  }
+  if (action.type === 'step') {
+    navigateToStep(action.step)
+  }
+}
+
+const handleAuthModeChange = (mode) => {
+  authMode.value = mode === 'register' ? 'register' : 'login'
+}
+
+onMounted(async () => {
+  await initializeAuth()
   window.addEventListener('hashchange', syncRouteState)
   syncRouteState()
 })
@@ -155,11 +204,9 @@ onUnmounted(() => {
 
 <template>
   <div class="relative w-full min-h-screen text-brand-900 font-sans tracking-tight">
-    
-    <!-- Hero View -->
+    <HomeDock />
     <div v-if="showHero" class="flex items-center justify-center min-h-screen p-6 relative z-10">
       <div class="glass max-w-3xl w-full p-12 md:p-16 rounded-[2.5rem] flex flex-col items-center text-center border-t border-white/80 shadow-2xl relative overflow-hidden group">
-        <!-- Shine effect -->
         <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent opacity-0 group-hover:opacity-100 transform -translate-x-full group-hover:translate-x-full transition-all duration-1000 ease-in-out pointer-events-none"></div>
 
         <div class="hero-anim mb-8">
@@ -191,15 +238,11 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Tutorial View -->
     <div v-if="showTutorial" class="flex flex-col min-h-screen relative z-10 pt-8 pb-32 px-4 md:px-8 max-w-[1600px] mx-auto">
-      
-      <!-- Hidden Header trigger -->
       <div class="fixed top-0 left-0 right-0 h-4 z-[90] cursor-pointer group" @mouseenter="showHeader = true">
          <div class="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-1.5 bg-slate-300/50 rounded-b-lg group-hover:bg-slate-400/60 transition-colors"></div>
       </div>
 
-      <!-- Navigation Header -->
       <transition enter-active-class="transition duration-300 ease-out"
                   enter-from-class="transform -translate-y-full opacity-0"
                   enter-to-class="transform translate-y-0 opacity-100"
@@ -207,7 +250,6 @@ onUnmounted(() => {
                   leave-from-class="transform translate-y-0 opacity-100"
                   leave-to-class="transform -translate-y-full opacity-0">
         <div v-show="true" class="glass fixed top-4 left-4 right-4 md:left-auto md:right-auto md:w-[90%] md:mx-auto max-w-6xl rounded-2xl z-[100] p-4 flex flex-col md:flex-row shadow-2xl items-center justify-between gap-4 border border-white/40">
-          
           <div class="flex items-center gap-4 w-full md:w-auto">
              <div class="bg-gradient-to-r from-brand-500 to-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-inner">步 骤 {{currentStep}}/5</div>
              <h2 class="text-xl font-extrabold text-slate-800 tracking-tight m-0">{{ getStepTitle(currentStep) }}</h2>
@@ -223,29 +265,22 @@ onUnmounted(() => {
               ]">
               <span class="text-xs font-bold opacity-80 mb-0.5">STEP {{step}}</span>
               <span class="text-sm font-medium whitespace-nowrap">{{ getStepLabel(step) }}</span>
-              <!-- progress bar indicator overlay -->
               <div v-if="currentStep === step" class="absolute bottom-0 left-0 h-1 bg-white/40 animate-pulse w-full"></div>
             </button>
           </div>
         </div>
       </transition>
 
-      <!-- Grid Bento Box System -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full mt-24 flex-grow">
-        
-        <!-- Main Content Panel (PDF) -->
         <div class="lg:col-span-8 flex flex-col glass-card rounded-[2rem] p-4 border border-white/60 shadow-xl overflow-hidden bento-item h-[70vh] min-h-[600px] relative group">
           <div class="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent pointer-events-none z-10 h-24"></div>
           <h3 class="text-lg font-bold text-slate-800 mb-4 px-2 relative z-20 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand-500"></span> 官方权威指南</h3>
           <div class="flex-1 rounded-2xl overflow-hidden bg-slate-100/50 inner-shadow relative z-20">
-            <iframe class="w-full h-full border-none" :src="`/shein/shein-guide${currentStep > 1 ? currentStep : ''}.pdf`"></iframe>
+            <iframe class="w-full h-full border-none" :src="currentPdfSrc"></iframe>
           </div>
         </div>
 
-        <!-- Sidebar Components -->
         <div class="lg:col-span-4 flex flex-col gap-6 bento-item h-[70vh] min-h-[600px]">
-          
-          <!-- Video Box -->
           <div class="glass-card rounded-[2rem] p-4 flex flex-col border border-white/60 shadow-xl flex-shrink-0 relative overflow-hidden group">
             <h3 class="text-lg font-bold text-slate-800 mb-3 px-2 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> 视频教程</h3>
             <div class="w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-700/50 shadow-inner relative flex items-center justify-center">
@@ -267,7 +302,6 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Tools / Info Box -->
           <div class="glass-card rounded-[2rem] p-6 flex-1 border border-white/60 shadow-xl overflow-y-auto flex flex-col">
             <h4 class="text-xs font-extrabold text-slate-400 tracking-wider uppercase mb-4">相关资源与工具</h4>
             
@@ -350,7 +384,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Floating Bottom Nav -->
       <div class="fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 z-50 p-2 glass rounded-full shadow-2xl border-white/60 bento-item">
         <button v-if="currentStep > 1" @click="goToStep(currentStep - 1)" class="px-6 py-2.5 rounded-full text-sm font-bold text-slate-600 hover:text-brand-600 bg-white/50 hover:bg-white transition-all border border-transparent hover:border-brand-200 hover:shadow-md">
            ← 上一步
@@ -362,15 +395,29 @@ onUnmounted(() => {
            完成入驻 ✓
         </button>
       </div>
-
     </div>
 
-    <!-- Modals -->
-    <CombinedSurveyModal :show="showCombinedSurvey" @close="handleCombinedSurveyClose" @submit="handleCombinedSurveySubmit" />
+    <AuthAccessModal
+      :show="showAuthModal"
+      :mode="authMode"
+      platform="shein"
+      @close="handleAuthClose"
+      @switch-mode="handleAuthModeChange"
+      @authenticated="handleAuthSuccess"
+    />
+
+    <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showVipNotice" class="fixed inset-0 z-[1100] flex items-center justify-center bg-slate-900/50 p-4" @click="showVipNotice = false">
+        <div class="w-full max-w-md rounded-3xl border border-white bg-white p-8 shadow-2xl" @click.stop>
+          <h3 class="text-2xl font-extrabold text-slate-800">未开通 SHEIN VIP</h3>
+          <p class="mt-3 text-sm leading-relaxed text-slate-600">你已登录，但管理员尚未为你的账号开通 SHEIN VIP。请联系管理员在后台开通后再访问教程。</p>
+          <button class="mt-6 w-full rounded-xl bg-brand-600 px-6 py-3 font-bold text-white transition hover:bg-brand-500" @click="showVipNotice = false">知道了</button>
+        </div>
+      </div>
+    </transition>
 
     <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 backdrop-blur-none" enter-to-class="opacity-100 backdrop-blur-sm" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 backdrop-blur-sm" leave-to-class="opacity-0 backdrop-blur-none">
       <div v-if="showMaterialsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" @click="closeMaterials">
-        
         <div class="bg-white/90 backdrop-blur-xl border border-white w-full max-w-md rounded-3xl p-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] transform transition-transform" @click.stop>
           <button @click="closeMaterials" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 hover:rotate-90 transition-transform">
              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -399,12 +446,10 @@ onUnmounted(() => {
         </div>
       </div>
     </transition>
-
   </div>
 </template>
 
 <style>
-/* Custom utility extensions if needed, like hiding scrollbars carefully */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .inner-shadow { box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); }

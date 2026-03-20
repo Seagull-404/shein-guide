@@ -1,7 +1,10 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import gsap from 'gsap'
+import AuthAccessModal from '../../components/AuthAccessModal.vue'
+import HomeDock from '../../components/HomeDock.vue'
 import OzonSurveyModal from '../../components/OzonSurveyModal.vue'
+import { useAuth } from '../../composables/useAuth'
 
 const STEP_COUNT = 4
 const staticBaseUrl = import.meta.env.BASE_URL
@@ -10,8 +13,14 @@ const showHero = ref(true)
 const showTutorial = ref(false)
 const showHeader = ref(true)
 const currentStep = ref(1)
+const showAuthModal = ref(false)
+const authMode = ref('login')
 const showSurveyModal = ref(false)
+const showVipNotice = ref(false)
+const pendingAction = ref(null)
 let headerHideTimer = null
+
+const { initializeAuth, isLoggedIn, hasVip } = useAuth()
 
 const steps = [
   {
@@ -119,14 +128,47 @@ const getStepFromHash = () => {
   return step >= 1 && step <= STEP_COUNT ? step : null
 }
 
+const ensureAccess = (action) => {
+  if (!isLoggedIn.value) {
+    pendingAction.value = action
+    authMode.value = 'login'
+    showAuthModal.value = true
+    return false
+  }
+  if (!hasVip('ozon')) {
+    showVipNotice.value = true
+    return false
+  }
+  showVipNotice.value = false
+  pendingAction.value = action
+  return true
+}
+
+const enterTutorialStep = (step) => {
+  const nextHash = `#step${step}`
+  if (window.location.hash === nextHash) {
+    syncRouteState()
+    return
+  }
+  window.location.hash = nextHash
+}
+
 const syncRouteState = () => {
   const step = getStepFromHash()
   if (step) {
-    showHero.value = false
-    showTutorial.value = true
-    currentStep.value = step
-    showHeader.value = true
-    scheduleHeaderHide()
+    if (ensureAccess({ type: 'step', step })) {
+      showHero.value = false
+      showTutorial.value = true
+      currentStep.value = step
+      showHeader.value = true
+      scheduleHeaderHide()
+    } else {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+      showHero.value = true
+      showTutorial.value = false
+      currentStep.value = 1
+      showHeader.value = true
+    }
   } else {
     showHero.value = true
     showTutorial.value = false
@@ -145,6 +187,7 @@ const syncRouteState = () => {
 }
 
 watch(currentStep, () => {
+  if (!showTutorial.value) return
   nextTick(() => {
     animateTutorial()
   })
@@ -157,12 +200,8 @@ const resolveLink = (href) => {
 }
 
 const goToStep = (step) => {
-  const nextHash = `#step${step}`
-  if (window.location.hash === nextHash) {
-    syncRouteState()
-    return
-  }
-  window.location.hash = nextHash
+  if (!ensureAccess({ type: 'step', step })) return
+  enterTutorialStep(step)
 }
 
 const navigateHome = () => {
@@ -175,21 +214,52 @@ const backToPortal = () => {
   window.location.href = `${staticBaseUrl}index.html`
 }
 
-const showSurvey = () => {
+const openTutorial = () => {
+  if (!ensureAccess({ type: 'survey', step: 1 })) return
   showSurveyModal.value = true
+}
+
+const handleAuthClose = () => {
+  showAuthModal.value = false
+  authMode.value = 'login'
+  pendingAction.value = null
+}
+
+const handleAuthSuccess = () => {
+  showAuthModal.value = false
+  authMode.value = 'login'
+  const action = pendingAction.value
+  pendingAction.value = null
+  if (!action) return
+  if (!hasVip('ozon')) {
+    showVipNotice.value = true
+    return
+  }
+  if (action.type === 'survey') {
+    showSurveyModal.value = true
+    return
+  }
+  if (action.type === 'step') {
+    enterTutorialStep(action.step)
+  }
+}
+
+const handleAuthModeChange = (mode) => {
+  authMode.value = mode === 'register' ? 'register' : 'login'
 }
 
 const handleSurveyClose = () => {
   showSurveyModal.value = false
-  goToStep(1)
+  enterTutorialStep(1)
 }
 
 const handleSurveySubmit = () => {
   showSurveyModal.value = false
-  goToStep(1)
+  enterTutorialStep(1)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await initializeAuth()
   window.addEventListener('hashchange', syncRouteState)
   syncRouteState()
 })
@@ -202,6 +272,7 @@ onUnmounted(() => {
 
 <template>
   <div class="relative min-h-screen w-full font-sans tracking-tight text-brand-900">
+    <HomeDock />
     <div v-if="showHero" class="relative z-10 flex min-h-screen items-center justify-center p-6">
       <div class="glass group relative flex w-full max-w-3xl flex-col items-center overflow-hidden rounded-[2.5rem] border-t border-white/80 p-12 text-center shadow-2xl md:p-16">
         <div class="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-tr from-transparent via-white/40 to-transparent opacity-0 transition-all duration-1000 ease-in-out group-hover:translate-x-full group-hover:opacity-100"></div>
@@ -233,16 +304,10 @@ onUnmounted(() => {
         <div class="hero-anim flex flex-wrap justify-center gap-3">
           <button
             class="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-brand-600 px-10 py-5 text-lg font-bold text-white transition-all duration-300 hover:scale-105 hover:bg-brand-500 hover:shadow-[0_0_40px_-10px_rgba(37,99,235,0.6)] focus:outline-none focus:ring-4 focus:ring-brand-500/30"
-            @click="showSurvey"
+            @click="openTutorial"
           >
             <span class="absolute inset-0 -mt-1 h-full w-full rounded-lg bg-gradient-to-b from-transparent via-transparent to-black opacity-30"></span>
             <span class="relative flex items-center gap-2">我要开店</span>
-          </button>
-          <button
-            class="rounded-full border border-slate-200 bg-white/80 px-10 py-5 font-bold text-slate-700 transition-all hover:bg-white"
-            @click="backToPortal"
-          >
-            返回总站
           </button>
         </div>
       </div>
@@ -386,7 +451,30 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <OzonSurveyModal :show="showSurveyModal" @close="handleSurveyClose" @submit="handleSurveySubmit" />
+    <AuthAccessModal
+      :show="showAuthModal"
+      :mode="authMode"
+      platform="ozon"
+      @close="handleAuthClose"
+      @switch-mode="handleAuthModeChange"
+      @authenticated="handleAuthSuccess"
+    />
+
+    <OzonSurveyModal
+      :show="showSurveyModal"
+      @close="handleSurveyClose"
+      @submit="handleSurveySubmit"
+    />
+
+    <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showVipNotice" class="fixed inset-0 z-[1100] flex items-center justify-center bg-slate-900/50 p-4" @click="showVipNotice = false">
+        <div class="w-full max-w-md rounded-3xl border border-white bg-white p-8 shadow-2xl" @click.stop>
+          <h3 class="text-2xl font-extrabold text-slate-800">未开通 OZON VIP</h3>
+          <p class="mt-3 text-sm leading-relaxed text-slate-600">你已登录，但管理员尚未为你的账号开通 OZON VIP。请联系管理员在后台开通后再访问教程。</p>
+          <button class="mt-6 w-full rounded-xl bg-brand-600 px-6 py-3 font-bold text-white transition hover:bg-brand-500" @click="showVipNotice = false">知道了</button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 

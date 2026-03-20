@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+﻿import { ref } from 'vue'
 
 const SURVEY_STORAGE_KEY = 'ozon_survey_data_v1'
 const VISITOR_ID_KEY = 'ozon_visitor_id'
@@ -68,16 +68,13 @@ export function useOzonSurvey() {
 
   async function submitToFeishu(data) {
     const record = {
+      target: 'ozonSignup',
       fields: {
-        '访客ID': data.visitorId,
-        '提交时间': Date.now(),
-        '平台': 'OZON',
-        '来源页面': 'OZON 教程',
         '隶属团队（推荐人）': data.form.team || '',
-        '姓名': data.form.name || '',
-        '联系方式': data.form.contact || '',
-        '团队人数': String(data.form.teamSize || ''),
-        '预计开店数量': String(data.form.storeCount || '')
+        姓名: data.form.name || '',
+        联系方式: data.form.contact || '',
+        团队人数: String(data.form.teamSize || ''),
+        预计开店数量: String(data.form.storeCount || '')
       }
     }
 

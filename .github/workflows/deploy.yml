@@ -16,6 +16,9 @@ env:
   DEPLOY_TMP: /tmp/shein-guide-deploy
   DEPLOY_PATH: /var/www/html/dist
   BACKUP_ROOT: /var/www/html/releases
+  APP_TMP: /tmp/shein-guide-app
+  APP_PATH: /var/www/shein-guide/app
+  SERVICE_NAME: shein-guide-api.service
 
 jobs:
   build:
@@ -71,6 +74,17 @@ jobs:
           strip_components: 1
           overwrite: true
 
+      - name: Upload API files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          port: ${{ secrets.ALIYUN_PORT }}
+          source: "server/*,deploy/shein-guide-api.service,nginx-config.conf"
+          target: ${{ env.APP_TMP }}
+          overwrite: true
+
       - name: Switch release on server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -83,6 +97,9 @@ jobs:
             DEPLOY_TMP="/tmp/shein-guide-deploy"
             DEPLOY_PATH="/var/www/html/dist"
             BACKUP_ROOT="/var/www/html/releases"
+            APP_TMP="/tmp/shein-guide-app"
+            APP_PATH="/var/www/shein-guide/app"
+            SERVICE_NAME="shein-guide-api.service"
             mkdir -p "${BACKUP_ROOT}"
             if [ -d "${DEPLOY_PATH}" ]; then
               mv "${DEPLOY_PATH}" "${BACKUP_ROOT}/dist_$(date +%Y%m%d_%H%M%S)"
@@ -92,6 +109,18 @@ jobs:
             chown -R www-data:www-data "${DEPLOY_PATH}"
             find "${DEPLOY_PATH}" -type d -exec chmod 755 {} \;
             find "${DEPLOY_PATH}" -type f -exec chmod 644 {} \;
+            mkdir -p "${APP_PATH}/server" "${APP_PATH}/data"
+            cp -a "${APP_TMP}/server/." "${APP_PATH}/server/"
+            chown -R www-data:www-data "${APP_PATH}"
+            find "${APP_PATH}" -type d -exec chmod 755 {} \;
+            find "${APP_PATH}" -type f -exec chmod 644 {} \;
+            cp "${APP_TMP}/deploy/shein-guide-api.service" "/etc/systemd/system/${SERVICE_NAME}"
+            chmod 644 "/etc/systemd/system/${SERVICE_NAME}"
+            cp "${APP_TMP}/nginx-config.conf" /etc/nginx/sites-available/zeyikuajing.com.conf
+            systemctl daemon-reload
+            systemctl enable "${SERVICE_NAME}"
+            systemctl restart "${SERVICE_NAME}"
             nginx -t
             systemctl reload nginx
             rm -rf "${DEPLOY_TMP}"
+            rm -rf "${APP_TMP}"

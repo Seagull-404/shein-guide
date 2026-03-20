@@ -1,6 +1,7 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import gsap from 'gsap'
+import { useAuth } from '../../composables/useAuth'
 
 const staticBaseUrl = import.meta.env.BASE_URL
 const languageStorageKey = 'portal-language'
@@ -91,9 +92,18 @@ const stripMaskStyle = {
 const currentLang = ref('zh')
 const isLangMenuOpen = ref(false)
 const activeSlide = ref(0)
+const authReady = ref(false)
 
 const copy = computed(() => translations[currentLang.value])
 const currentLanguage = computed(() => languages.find((language) => language.code === currentLang.value) ?? languages[0])
+const { initializeAuth, user, isLoggedIn, isAdmin, hasAnyVip, logout } = useAuth()
+const authDisplayName = computed(() => user.value?.nickname || user.value?.phone || '')
+const authBadgeLabel = computed(() => {
+  if (!user.value) return ''
+  if (isAdmin.value) return '管理员'
+  if (hasAnyVip.value) return 'VIP'
+  return ''
+})
 
 let slideInterval = null
 
@@ -131,6 +141,10 @@ const handleWindowClick = (event) => {
 }
 
 onMounted(() => {
+  initializeAuth().finally(() => {
+    authReady.value = true
+  })
+
   const storedLanguage = window.localStorage.getItem(languageStorageKey)
   if (storedLanguage && translations[storedLanguage]) {
     currentLang.value = storedLanguage
@@ -151,6 +165,14 @@ onUnmounted(() => {
   window.removeEventListener('click', handleWindowClick)
   stopAutoSlide()
 })
+
+const openAdminPage = () => {
+  window.location.href = './admin.html'
+}
+
+const logoutPortal = async () => {
+  await logout()
+}
 </script>
 
 <template>
@@ -177,35 +199,61 @@ onUnmounted(() => {
           </a>
         </div>
 
-        <div class="lang-switch relative flex items-center">
-          <button
-            class="flex items-center gap-3 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-[0_0_20px_rgba(30,107,255,0.25)]"
-            @click.stop="toggleLanguageMenu"
-          >
-            <span class="text-lg leading-none">{{ currentLanguage.flag }}</span>
-            <span class="hidden sm:inline">{{ currentLanguage.label }}</span>
-            <svg class="h-4 w-4 transition-transform" :class="isLangMenuOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          <div
-            v-if="isLangMenuOpen"
-            class="absolute right-0 top-[calc(100%+0.75rem)] min-w-[180px] rounded-2xl border border-white/15 bg-[#07142E]/95 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
-          >
+        <div class="flex items-center gap-3">
+          <div v-if="authReady && isLoggedIn" class="flex items-center gap-2">
             <button
-              v-for="language in languages"
-              :key="language.code"
-              class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/10"
-              :class="language.code === currentLang ? 'bg-white/10 text-white' : 'text-[#B7C7E6]'"
-              @click.stop="setLanguage(language.code)"
+              v-if="isAdmin"
+              class="flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-400/10 px-4 py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-amber-400/20"
+              @click="openAdminPage"
             >
-              <span class="flex items-center gap-3">
-                <span class="text-lg leading-none">{{ language.flag }}</span>
-                <span>{{ language.label }}</span>
-              </span>
-              <span v-if="language.code === currentLang" class="text-cyan-300">●</span>
+              <span class="inline-flex rounded-full bg-amber-300 px-2 py-0.5 text-[11px] font-bold text-slate-900">{{ authBadgeLabel }}</span>
+              <span class="max-w-[120px] truncate">{{ authDisplayName }}</span>
             </button>
+            <div
+              v-else
+              class="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-bold text-white"
+            >
+              <span v-if="authBadgeLabel" class="inline-flex rounded-full bg-emerald-300 px-2 py-0.5 text-[11px] font-bold text-slate-900">{{ authBadgeLabel }}</span>
+              <span class="max-w-[120px] truncate">{{ authDisplayName }}</span>
+            </div>
+            <button
+              class="rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-[0_0_20px_rgba(30,107,255,0.25)]"
+              @click="logoutPortal"
+            >
+              退出
+            </button>
+          </div>
+
+          <div class="lang-switch relative flex items-center">
+            <button
+              class="flex items-center gap-3 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-[0_0_20px_rgba(30,107,255,0.25)]"
+              @click.stop="toggleLanguageMenu"
+            >
+              <span class="text-lg leading-none">{{ currentLanguage.flag }}</span>
+              <span class="hidden sm:inline">{{ currentLanguage.label }}</span>
+              <svg class="h-4 w-4 transition-transform" :class="isLangMenuOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <div
+              v-if="isLangMenuOpen"
+              class="absolute right-0 top-[calc(100%+0.75rem)] min-w-[180px] rounded-2xl border border-white/15 bg-[#07142E]/95 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
+            >
+              <button
+                v-for="language in languages"
+                :key="language.code"
+                class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/10"
+                :class="language.code === currentLang ? 'bg-white/10 text-white' : 'text-[#B7C7E6]'"
+                @click.stop="setLanguage(language.code)"
+              >
+                <span class="flex items-center gap-3">
+                  <span class="text-lg leading-none">{{ language.flag }}</span>
+                  <span>{{ language.label }}</span>
+                </span>
+                <span v-if="language.code === currentLang" class="text-cyan-300">●</span>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -540,3 +588,5 @@ onUnmounted(() => {
   animation: scanner 4s alternate infinite;
 }
 </style>
+
+
