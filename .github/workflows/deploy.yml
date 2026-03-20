@@ -84,7 +84,7 @@ jobs:
           username: ${{ secrets.ALIYUN_USERNAME }}
           key: ${{ secrets.ALIYUN_SSH_KEY }}
           port: ${{ secrets.ALIYUN_PORT }}
-          source: "server/*,deploy/shein-guide-api.service,nginx-config.conf"
+          source: "server,deploy,nginx-config.conf"
           target: ${{ env.APP_TMP }}
           overwrite: true
 
