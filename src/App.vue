@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import gsap from 'gsap'
 import AuthAccessModal from './components/AuthAccessModal.vue'
+import CombinedSurveyModal from './components/CombinedSurveyModal.vue'
 import HomeDock from './components/HomeDock.vue'
 import { useAuth } from './composables/useAuth'
 
@@ -16,6 +17,7 @@ const currentStep = ref(1)
 const showHeader = ref(true)
 const showAuthModal = ref(false)
 const authMode = ref('login')
+const showSurveyModal = ref(false)
 const showVipNotice = ref(false)
 const pendingAction = ref(null)
 let headerHideTimer = null
@@ -134,8 +136,8 @@ const materialsProgress = computed(() => {
 })
 
 const goToMaterials = () => {
-  if (!ensureAccess({ type: 'materials' })) return
-  showMaterialsModal.value = true
+  if (!ensureAccess({ type: 'survey' })) return
+  showSurveyModal.value = true
 }
 const closeMaterials = () => { showMaterialsModal.value = false }
 const nextStep = () => {
@@ -177,6 +179,10 @@ const handleAuthSuccess = () => {
     showVipNotice.value = true
     return
   }
+  if (action.type === 'survey') {
+    showSurveyModal.value = true
+    return
+  }
   if (action.type === 'materials') {
     showMaterialsModal.value = true
     return
@@ -188,6 +194,16 @@ const handleAuthSuccess = () => {
 
 const handleAuthModeChange = (mode) => {
   authMode.value = mode === 'register' ? 'register' : 'login'
+}
+
+const handleSurveyClose = () => {
+  showSurveyModal.value = false
+  showMaterialsModal.value = true
+}
+
+const handleSurveySubmit = () => {
+  showSurveyModal.value = false
+  showMaterialsModal.value = true
 }
 
 onMounted(async () => {
@@ -404,6 +420,12 @@ onUnmounted(() => {
       @close="handleAuthClose"
       @switch-mode="handleAuthModeChange"
       @authenticated="handleAuthSuccess"
+    />
+
+    <CombinedSurveyModal
+      :show="showSurveyModal"
+      @close="handleSurveyClose"
+      @submit="handleSurveySubmit"
     />
 
     <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">

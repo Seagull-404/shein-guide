@@ -220,7 +220,7 @@ export function useSurvey() {
         const isDev = window.location.hostname === 'localhost'
         const apiUrl = isDev
           ? 'http://localhost:3001/api/feishu/record'
-          : 'https://shein-serve-3g1udmby7bb8de4f-1355592364.ap-shanghai.app.tcloudbase.com/feishu?v=2'
+          : `${window.location.origin}/api/feishu/record`
 
         const response = await fetch(apiUrl, {
           method: 'POST',
@@ -231,23 +231,23 @@ export function useSurvey() {
         const result = await response.json()
 
         if (result.success) {
-          console.log('鉁?鏁版嵁宸叉垚鍔熷啓鍏ラ涔﹁〃鏍?)
-          console.log('琛ㄦ牸閾炬帴:', FEISHU_BASE_LINK)
+          console.log('Feishu record created successfully')
+          console.log('Feishu base link:', FEISHU_BASE_LINK)
         } else {
-          console.error('鉂?鍐欏叆澶辫触:', result.message)
+          console.error('Failed to create Feishu record:', result.message)
         }
 
         return result.success
       } catch (error) {
-        console.error('鉂?璇锋眰浠ｇ悊鏈嶅姟澶辫触:', error)
-        console.log('璇风‘淇濆悗绔湇鍔″凡鍚姩: node server/feishu-proxy.js')
+        console.error('Feishu proxy request failed:', error)
+        console.log('Please make sure the backend API is running: node server/feishu-proxy.cjs')
         // 澶辫触涓嶉樆濉炴祦绋?
         return false
       }
       
       return true
     } catch (error) {
-      console.error('鎻愪氦鍒伴涔﹀け璐?', error)
+      console.error('Failed to submit survey to Feishu:', error)
       // 澶辫触涓嶉樆濉炴祦绋嬶紝璁板綍鏃ュ織鍗冲彲
       return false
     }
@@ -265,15 +265,15 @@ export function useSurvey() {
   // 鏍煎紡鍖栭涔︽秷鎭?
   function formatFeishuMessage(step, data) {
     if (step === 'basic') {
-      return `**闅跺睘鍥㈤槦锛?* ${data.basicInfo.team}
-**钀ヤ笟鎵х収鍚嶇О锛?* ${data.basicInfo.licenseName}
-**淇＄敤浠ｇ爜锛?* ${data.basicInfo.licenseCode}
-**娉ㄥ唽鏃ユ湡锛?* ${data.basicInfo.licenseDate}
-**娉曚汉濮撳悕锛?* ${data.basicInfo.legalName}
-**娉ㄥ唽鍦板潃锛?* ${data.basicInfo.licenseAddress}`
+      return `团队: ${data.basicInfo.team}
+营业执照名称: ${data.basicInfo.licenseName}
+统一社会信用代码: ${data.basicInfo.licenseCode}
+注册日期: ${data.basicInfo.licenseDate}
+法人姓名: ${data.basicInfo.legalName}
+注册地址: ${data.basicInfo.licenseAddress}`
     } else {
-      return `**甯岄煶璐﹀彿锛?* ${data.accountInfo.sheinAccount}
-**瀵嗙爜锛?* 宸插姞瀵嗗瓨鍌╜
+      return `SHEIN 账号: ${data.accountInfo.sheinAccount}
+密码: 已保存`
     }
   }
   
