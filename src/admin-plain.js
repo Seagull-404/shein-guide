@@ -68,7 +68,7 @@ function renderDashboard() {
     </tr>`).join('')
 
   return `
-    <section class="card toolbar"><div><div style="font-size:18px;font-weight:700">普通用户管理</div><div class="muted">管理员默认拥有两个教程 VIP，但看不到其他管理员账号。</div></div><button id="refresh-btn" class="btn">刷新</button></section>
+    <section class="card toolbar"><div><div style="font-size:18px;font-weight:700">普通用户管理</div></div><button id="refresh-btn" class="btn">刷新</button></section>
     <section class="card table-wrap"><table><thead><tr><th>手机号</th><th>昵称</th><th>平台</th><th>SHEIN VIP</th><th>OZON VIP</th><th>状态</th><th>创建时间</th></tr></thead><tbody>${rows}</tbody></table></section>
   `
 }
