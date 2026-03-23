@@ -359,6 +359,13 @@ onUnmounted(() => {
         </div>
       </transition>
 
+      <div v-if="currentStep === 1" class="pointer-events-none absolute right-4 top-28 z-[95] flex justify-end md:right-8">
+        <div class="relative max-w-[280px] rounded-2xl border border-amber-200/80 bg-white/90 px-4 py-3 text-right shadow-[0_18px_40px_rgba(15,23,42,0.14)] backdrop-blur-md">
+          <div class="absolute -top-2 right-10 h-4 w-4 rotate-45 border-l border-t border-amber-200/80 bg-white/90"></div>
+          <p class="text-sm font-bold tracking-wide text-amber-700 md:text-[15px]">微信内部请在浏览器打开</p>
+        </div>
+      </div>
+
       <div class="mt-24 grid w-full flex-grow grid-cols-1 gap-6 lg:grid-cols-12">
         <div class="bento-item glass-card relative flex h-[70vh] min-h-[600px] flex-col overflow-hidden rounded-[2rem] border border-white/60 p-4 shadow-xl lg:col-span-8">
           <div class="pointer-events-none absolute inset-0 z-10 h-24 bg-gradient-to-b from-white/40 to-transparent"></div>
