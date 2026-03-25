@@ -165,7 +165,9 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/admin/admin-users' && req.method === 'GET') return sendJson(res, 200, { success: true, data: listAdminUsers(getBearerToken(req)) });
     if (pathname === '/api/admin/audit-logs' && req.method === 'GET') return sendJson(res, 200, { success: true, data: listAuditLogs(getBearerToken(req)) });
 
-    if (pathname === '/api/feishu/record' && req.method === 'POST') return sendJson(res, 200, { success: true, data: await writeToFeishuTable(await parseBody(req)) });
+    if ((pathname === '/api/feishu' || pathname === '/api/feishu/record') && req.method === 'POST') {
+      return sendJson(res, 200, { success: true, data: await writeToFeishuTable(await parseBody(req)) });
+    }
     if (pathname === '/api/health' && req.method === 'GET') return sendJson(res, 200, { success: true, time: new Date().toISOString() });
 
     sendJson(res, 404, { success: false, error: 'Not Found' });

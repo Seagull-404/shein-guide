@@ -60,7 +60,7 @@ function saveSurveyData(data) {
 function getApiUrl() {
   const isDev = window.location.hostname === 'localhost'
   if (isDev) return 'http://localhost:3001/api/feishu/record'
-  return `${window.location.origin}/api/feishu`
+  return `${window.location.origin}/api/feishu/record`
 }
 
 export function useOzonSurvey() {
