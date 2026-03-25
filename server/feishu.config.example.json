@@ -1,0 +1,14 @@
+﻿{
+  "appId": "cli_xxxxxxxxxxxxxxxx",
+  "appSecret": "xxxxxxxxxxxxxxxx",
+  "targets": {
+    "legacy": {
+      "baseId": "QQmOb1kOsacDZksa7JRclM7snKf",
+      "tableId": "tblVcBw1zUhWp6IU"
+    },
+    "ozonSignup": {
+      "baseId": "VOZHbvCpDaiDjps2XfqcA3venyf",
+      "tableId": "tblezeMHFAlOamAh"
+    }
+  }
+}

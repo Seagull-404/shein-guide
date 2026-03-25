@@ -1,0 +1,14 @@
+[Unit]
+Description=SHEIN Guide Local API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/shein-guide/app
+ExecStart=/usr/bin/node /var/www/shein-guide/app/server/feishu-proxy.cjs
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

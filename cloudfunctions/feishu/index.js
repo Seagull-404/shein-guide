@@ -1,17 +1,13 @@
-'use strict';
+﻿'use strict';
 const https = require('https');
-
-const FEISHU_CONFIG = {
-  appId: 'cli_a927f88bdc389bdf',
-  appSecret: 'N5VooPOZcbWrdJzhg7tvHgreGdQsEene',
-  baseId: 'QQmOb1kOsacDZksa7JRclM7snKf',
-  tableId: 'tblVcBw1zUhWp6IU'
-};
+const { getFeishuConfig, assertFeishuConfig } = require('../../server/feishu-config.cjs');
 
 let accessToken = null;
 let tokenExpireTime = 0;
 
 async function getAccessToken() {
+  const FEISHU_CONFIG = getFeishuConfig();
+  assertFeishuConfig(FEISHU_CONFIG, ['appId', 'appSecret']);
   if (accessToken && Date.now() < tokenExpireTime) return accessToken;
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify({ app_id: FEISHU_CONFIG.appId, app_secret: FEISHU_CONFIG.appSecret });
@@ -30,7 +26,7 @@ async function getAccessToken() {
             tokenExpireTime = Date.now() + (result.expire - 300) * 1000; 
             resolve(accessToken); 
           }
-          else reject(new Error('获取令牌失败: ' + result.msg));
+          else reject(new Error('鑾峰彇浠ょ墝澶辫触: ' + result.msg));
         } catch (e) { reject(e); }
       });
     });
@@ -41,10 +37,12 @@ async function getAccessToken() {
 }
 
 async function writeToFeishuTable(record) {
+  const FEISHU_CONFIG = getFeishuConfig(record.target || 'legacy');
+  assertFeishuConfig(FEISHU_CONFIG, ['appId', 'appSecret', 'baseId', 'tableId']);
   const token = await getAccessToken();
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify({ fields: record.fields });
-    console.log('发送数据:', postData);
+    console.log('鍙戦€佹暟鎹?', postData);
     const req = https.request({
       hostname: 'open.feishu.cn', port: 443,
       path: '/open-apis/bitable/v1/apps/' + FEISHU_CONFIG.baseId + '/tables/' + FEISHU_CONFIG.tableId + '/records',
@@ -54,11 +52,11 @@ async function writeToFeishuTable(record) {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
-        console.log('飞书响应:', data);
+        console.log('椋炰功鍝嶅簲:', data);
         try {
           const result = JSON.parse(data);
           if (result.code === 0) resolve(result.data);
-          else reject(new Error('写入失败: ' + (result.msg || JSON.stringify(result))));
+          else reject(new Error('鍐欏叆澶辫触: ' + (result.msg || JSON.stringify(result))));
         } catch (e) { reject(e); }
       });
     });
@@ -73,17 +71,19 @@ exports.main = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
   try {
     const body = event.body ? (typeof event.body === 'string' ? JSON.parse(event.body) : event.body) : event;
-    console.log('收到请求:', JSON.stringify(body, null, 2));
+    console.log('鏀跺埌璇锋眰:', JSON.stringify(body, null, 2));
     
-    // 验证请求数据
+    // 楠岃瘉璇锋眰鏁版嵁
     if (!body || !body.fields) {
-      return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: '请求格式错误：缺少 fields 字段' }) };
+      return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: '璇锋眰鏍煎紡閿欒锛氱己灏?fields 瀛楁' }) };
     }
     
     const result = await writeToFeishuTable(body);
-    return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: '写入成功', data: result }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: '鍐欏叆鎴愬姛', data: result }) };
   } catch (error) {
-    console.error('错误:', error);
+    console.error('閿欒:', error);
     return { statusCode: 500, headers, body: JSON.stringify({ success: false, error: error.message }) };
   }
 };
+
+

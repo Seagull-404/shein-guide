@@ -1,51 +1,17 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
-    <meta http-equiv="Vary" content="*" />
-    <link rel="icon" type="image/jpeg" href="/icon.jpg" />
-    <link rel="apple-touch-icon" type="image/jpeg" href="/icon.jpg" />
+    <link rel="icon" type="image/jpeg" href="/shein/icon.jpg" />
+    <link rel="apple-touch-icon" type="image/jpeg" href="/shein/icon.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SHEIN 中国商家开店全流程指引</title>
-    <script>
-      // 强制清除浏览器缓存
-      (function() {
-        // 方法1: 给当前页面URL添加时间戳重新加载（仅一次）
-        if (!window.location.href.includes('nocache=')) {
-          var url = new URL(window.location.href);
-          url.searchParams.set('nocache', Date.now());
-          window.location.replace(url.toString());
-          return;
-        }
-        
-        // 方法2: 清除所有缓存存储
-        if ('caches' in window) {
-          caches.keys().then(function(names) {
-            names.forEach(function(name) {
-              caches.delete(name);
-            });
-          });
-        }
-        
-        // 方法3: 尝试清除 localStorage 中的缓存标记
-        localStorage.removeItem('vite:preload');
-        
-        // 方法4: 给所有动态加载的资源添加时间戳
-        var originalFetch = window.fetch;
-        window.fetch = function(url, options) {
-          if (typeof url === 'string' && url.includes('/assets/')) {
-            url = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
-          }
-          return originalFetch.call(this, url, options);
-        };
-      })();
-    </script>
+    <title>泽屹跨境</title>
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/main-portal.js"></script>
   </body>
 </html>

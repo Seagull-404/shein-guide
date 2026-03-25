@@ -1,40 +1,61 @@
-/**
- * 飞书 API 代理服务
- * 用于处理前端发来的飞书表格写入请求
- */
-
-const http = require('http');
+﻿const http = require('http');
 const https = require('https');
-const url = require('url');
-const fs = require('fs');
-const path = require('path');
+const { getFeishuConfig, assertFeishuConfig } = require('./feishu-config.cjs');
+const {
+  createCaptcha,
+  registerUser,
+  loginUser,
+  loginAdmin,
+  getUserFromToken,
+  getAdminFromToken,
+  logoutToken,
+  logoutAdminToken,
+  listManageableUsers,
+  updateManageableUser,
+  listAllUsers,
+  updateUserBySuperAdmin,
+  listAdminUsers,
+  listAuditLogs
+} = require('./auth-service.cjs');
 
-// 飞书配置
-const FEISHU_CONFIG = {
-  appId: 'cli_a927f88bdc389bdf',
-  appSecret: 'N5VooPOZcbWrdJzhg7tvHgreGdQsEene',
-  baseId: 'QQmOb1kOsacDZksa7JRclM7snKf',
-  tableId: 'tblVcBw1zUhWp6IU'
-};
-
-// 缓存访问令牌
 let accessToken = null;
 let tokenExpireTime = 0;
 
-// 获取飞书访问令牌
-async function getAccessToken() {
-  // 检查缓存的令牌是否有效
-  if (accessToken && Date.now() < tokenExpireTime) {
-    return accessToken;
-  }
+function sendJson(res, statusCode, payload) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(payload));
+}
 
+function parseBody(req) {
   return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      app_id: FEISHU_CONFIG.appId,
-      app_secret: FEISHU_CONFIG.appSecret
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
     });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (error) {
+        reject(new Error('请求体 JSON 解析失败'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
 
-    const options = {
+function getBearerToken(req) {
+  const header = req.headers.authorization || '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : '';
+}
+
+async function getAccessToken() {
+  const feishuConfig = getFeishuConfig();
+  assertFeishuConfig(feishuConfig, ['appId', 'appSecret']);
+  if (accessToken && Date.now() < tokenExpireTime) return accessToken;
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({ app_id: feishuConfig.appId, app_secret: feishuConfig.appSecret });
+    const request = https.request({
       hostname: 'open.feishu.cn',
       port: 443,
       path: '/open-apis/auth/v3/app_access_token/internal',
@@ -43,154 +64,125 @@ async function getAccessToken() {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(postData)
       }
-    };
-
-    const req = https.request(options, (res) => {
+    }, (response) => {
       let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
+      response.on('data', (chunk) => { data += chunk; });
+      response.on('end', () => {
         try {
           const result = JSON.parse(data);
-          if (result.code === 0) {
-            accessToken = result.app_access_token;
-            // 令牌有效期 2 小时，提前 5 分钟刷新
-            tokenExpireTime = Date.now() + (result.expire - 300) * 1000;
-            resolve(accessToken);
-          } else {
-            reject(new Error(`获取令牌失败: ${result.msg}`));
-          }
-        } catch (e) {
-          reject(e);
+          if (result.code !== 0) return reject(new Error(`获取飞书令牌失败: ${result.msg}`));
+          accessToken = result.app_access_token;
+          tokenExpireTime = Date.now() + (result.expire - 300) * 1000;
+          resolve(accessToken);
+        } catch (error) {
+          reject(error);
         }
       });
     });
-
-    req.on('error', reject);
-    req.write(postData);
-    req.end();
+    request.on('error', reject);
+    request.write(postData);
+    request.end();
   });
 }
 
-// 写入飞书表格
 async function writeToFeishuTable(record) {
+  const feishuConfig = getFeishuConfig(record.target || 'legacy');
+  assertFeishuConfig(feishuConfig, ['appId', 'appSecret', 'baseId', 'tableId']);
   const token = await getAccessToken();
-
+  const normalizedFields = {};
+  for (const [fieldName, value] of Object.entries(record.fields || {})) {
+    const canonicalName = feishuConfig.fieldAliases?.[fieldName] || fieldName;
+    const targetField = feishuConfig.fieldMap?.[canonicalName] || canonicalName;
+    normalizedFields[targetField] = value;
+  }
   return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      fields: record.fields
-    });
-
-    const options = {
+    const postData = JSON.stringify({ fields: normalizedFields });
+    const request = https.request({
       hostname: 'open.feishu.cn',
       port: 443,
-      path: `/open-apis/bitable/v1/apps/${FEISHU_CONFIG.baseId}/tables/${FEISHU_CONFIG.tableId}/records`,
+      path: `/open-apis/bitable/v1/apps/${feishuConfig.baseId}/tables/${feishuConfig.tableId}/records`,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Length': Buffer.byteLength(postData)
       }
-    };
-
-    const req = https.request(options, (res) => {
+    }, (response) => {
       let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
+      response.on('data', (chunk) => { data += chunk; });
+      response.on('end', () => {
         try {
           const result = JSON.parse(data);
-          if (result.code === 0) {
-            resolve(result.data);
-          } else {
-            console.error('飞书 API 错误:', result);
-            reject(new Error(`写入表格失败: ${result.msg} (code: ${result.code})`));
-          }
-        } catch (e) {
-          reject(e);
+          if (result.code !== 0) return reject(new Error(`写入飞书失败: ${result.msg}`));
+          resolve(result.data);
+        } catch (error) {
+          reject(error);
         }
       });
     });
-
-    req.on('error', reject);
-    req.write(postData);
-    req.end();
+    request.on('error', reject);
+    request.write(postData);
+    request.end();
   });
 }
 
-// 创建 HTTP 服务器
 const server = http.createServer(async (req, res) => {
-  // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // 处理预检请求
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
     res.end();
     return;
   }
 
-  const parsedUrl = url.parse(req.url, true);
-  const pathname = parsedUrl.pathname;
+  try {
+    const pathname = new URL(req.url, 'http://localhost').pathname;
 
-  // API 路由：写入飞书表格
-  if (pathname === '/api/feishu/record' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', async () => {
-      try {
-        const record = JSON.parse(body);
-        console.log('收到写入请求:', record);
+    if (pathname === '/api/auth/captcha' && req.method === 'GET') return sendJson(res, 200, { success: true, data: createCaptcha() });
+    if (pathname === '/api/auth/register' && req.method === 'POST') return sendJson(res, 200, { success: true, data: registerUser(await parseBody(req)) });
+    if (pathname === '/api/auth/login' && req.method === 'POST') return sendJson(res, 200, { success: true, data: loginUser(await parseBody(req)) });
+    if (pathname === '/api/auth/logout' && req.method === 'POST') {
+      logoutToken(getBearerToken(req));
+      return sendJson(res, 200, { success: true });
+    }
+    if (pathname === '/api/auth/me' && req.method === 'GET') {
+      const user = getUserFromToken(getBearerToken(req));
+      if (!user) return sendJson(res, 401, { success: false, error: '未登录或登录已过期' });
+      return sendJson(res, 200, { success: true, data: user });
+    }
 
-        const result = await writeToFeishuTable(record);
-        console.log('写入成功:', result);
+    if (pathname === '/api/manager/users' && req.method === 'GET') return sendJson(res, 200, { success: true, data: listManageableUsers(getBearerToken(req)) });
+    if (pathname === '/api/manager/user' && req.method === 'PATCH') return sendJson(res, 200, { success: true, data: updateManageableUser(getBearerToken(req), await parseBody(req)) });
 
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: true,
-          message: '记录已写入飞书表格',
-          data: result
-        }));
-      } catch (error) {
-        console.error('写入失败:', error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: false,
-          message: error.message
-        }));
-      }
-    });
-    return;
+    if (pathname === '/api/admin/login' && req.method === 'POST') return sendJson(res, 200, { success: true, data: loginAdmin(await parseBody(req)) });
+    if (pathname === '/api/admin/logout' && req.method === 'POST') {
+      logoutAdminToken(getBearerToken(req));
+      return sendJson(res, 200, { success: true });
+    }
+    if (pathname === '/api/admin/me' && req.method === 'GET') {
+      const admin = getAdminFromToken(getBearerToken(req));
+      if (!admin) return sendJson(res, 401, { success: false, error: '未登录或登录已过期' });
+      return sendJson(res, 200, { success: true, data: admin });
+    }
+    if (pathname === '/api/admin/users' && req.method === 'GET') return sendJson(res, 200, { success: true, data: listAllUsers(getBearerToken(req)) });
+    if (pathname === '/api/admin/user' && req.method === 'PATCH') return sendJson(res, 200, { success: true, data: updateUserBySuperAdmin(getBearerToken(req), await parseBody(req)) });
+    if (pathname === '/api/admin/admin-users' && req.method === 'GET') return sendJson(res, 200, { success: true, data: listAdminUsers(getBearerToken(req)) });
+    if (pathname === '/api/admin/audit-logs' && req.method === 'GET') return sendJson(res, 200, { success: true, data: listAuditLogs(getBearerToken(req)) });
+
+    if ((pathname === '/api/feishu' || pathname === '/api/feishu/record') && req.method === 'POST') {
+      return sendJson(res, 200, { success: true, data: await writeToFeishuTable(await parseBody(req)) });
+    }
+    if (pathname === '/api/health' && req.method === 'GET') return sendJson(res, 200, { success: true, time: new Date().toISOString() });
+
+    sendJson(res, 404, { success: false, error: 'Not Found' });
+  } catch (error) {
+    sendJson(res, error.statusCode || 400, { success: false, error: error.message });
   }
-
-  // API 路由：健康检查
-  if (pathname === '/api/health' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      time: new Date().toISOString()
-    }));
-    return;
-  }
-
-  // 404
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not Found' }));
 });
 
 const PORT = process.env.PORT || 3001;
-
 server.listen(PORT, () => {
-  console.log(`🚀 飞书代理服务已启动`);
-  console.log(`📡 监听端口: ${PORT}`);
-  console.log(`🔗 API 地址: http://localhost:${PORT}/api/feishu/record`);
-  console.log(`📊 表格链接: https://my.feishu.cn/base/${FEISHU_CONFIG.baseId}`);
-  console.log('');
-  console.log('按 Ctrl+C 停止服务');
-});
-
-// 优雅退出
-process.on('SIGINT', () => {
-  console.log('\n👋 服务已停止');
-  process.exit(0);
+  console.log(`Local API server listening on http://localhost:${PORT}`);
 });

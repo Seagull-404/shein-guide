@@ -109,7 +109,8 @@ const currentStep = computed(() => stepData[currentStepId.value])
 </script>
 
 <template>
-  <h1>SHEIN 商家入驻标准流程</h1>
+  <h1>SHEIN </h1>
+<h1>商家入驻标准流程</h1>
 
   <!-- 主按钮区域 -->
   <div v-if="showHero" class="hero">

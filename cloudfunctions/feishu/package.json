@@ -1,0 +1,7 @@
+{
+  "name": "feishu-cloudfunction",
+  "version": "1.0.0",
+  "description": "Feishu Bitable cloud function",
+  "main": "index.js",
+  "dependencies": {}
+}
