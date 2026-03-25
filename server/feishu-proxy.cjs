@@ -89,8 +89,14 @@ async function writeToFeishuTable(record) {
   const feishuConfig = getFeishuConfig(record.target || 'legacy');
   assertFeishuConfig(feishuConfig, ['appId', 'appSecret', 'baseId', 'tableId']);
   const token = await getAccessToken();
+  const normalizedFields = {};
+  for (const [fieldName, value] of Object.entries(record.fields || {})) {
+    const canonicalName = feishuConfig.fieldAliases?.[fieldName] || fieldName;
+    const targetField = feishuConfig.fieldMap?.[canonicalName] || canonicalName;
+    normalizedFields[targetField] = value;
+  }
   return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({ fields: record.fields });
+    const postData = JSON.stringify({ fields: normalizedFields });
     const request = https.request({
       hostname: 'open.feishu.cn',
       port: 443,

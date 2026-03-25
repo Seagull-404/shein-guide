@@ -136,8 +136,8 @@ const materialsProgress = computed(() => {
 })
 
 const goToMaterials = () => {
-  if (!ensureAccess({ type: 'survey' })) return
-  showSurveyModal.value = true
+  if (!ensureAccess({ type: 'materials' })) return
+  showMaterialsModal.value = true
 }
 const closeMaterials = () => { showMaterialsModal.value = false }
 const nextStep = () => {
@@ -147,6 +147,11 @@ const nextStep = () => {
 }
 
 const goToStep = (step) => {
+  if (currentStep.value === 2 && step === 3) {
+    if (!ensureAccess({ type: 'survey-step', step })) return
+    showSurveyModal.value = true
+    return
+  }
   if (!ensureAccess({ type: 'step', step })) return
   navigateToStep(step)
 }
@@ -183,6 +188,10 @@ const handleAuthSuccess = () => {
     showSurveyModal.value = true
     return
   }
+  if (action.type === 'survey-step') {
+    showSurveyModal.value = true
+    return
+  }
   if (action.type === 'materials') {
     showMaterialsModal.value = true
     return
@@ -197,13 +206,21 @@ const handleAuthModeChange = (mode) => {
 }
 
 const handleSurveyClose = () => {
+  const action = pendingAction.value
+  pendingAction.value = null
   showSurveyModal.value = false
-  showMaterialsModal.value = true
+  if (action?.type === 'survey-step') {
+    navigateToStep(action.step)
+  }
 }
 
 const handleSurveySubmit = () => {
+  const action = pendingAction.value
+  pendingAction.value = null
   showSurveyModal.value = false
-  showMaterialsModal.value = true
+  if (action?.type === 'survey-step') {
+    navigateToStep(action.step)
+  }
 }
 
 onMounted(async () => {

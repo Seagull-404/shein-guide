@@ -1,4 +1,4 @@
-﻿/**
+﻿﻿﻿﻿/**
  * 闂嵎绠＄悊缁勫悎寮忓嚱鏁?
  * 绠＄悊闂嵎鐘舵€併€佹暟鎹瓨鍌ㄥ拰瑙﹀彂閫昏緫
  */
@@ -80,7 +80,7 @@ function encryptPassword(password) {
 }
 
 // 椋炰功閰嶇疆
-const FEISHU_BASE_LINK = 'https://my.feishu.cn/base/VOZHbvCpDaiDjps2XfqcA3venyf'
+const FEISHU_BASE_LINK = 'https://my.feishu.cn/base/QQmOb1kOsacDZksa7JRclM7snKf?from=from_copylink'
 
 export function useSurvey() {
   // 闂嵎鏁版嵁鍝嶅簲寮忓璞?
@@ -198,17 +198,18 @@ export function useSurvey() {
 
       // 鍑嗗琛ㄦ牸鏁版嵁
       const record = {
+        target: 'legacy',
         fields: {
-          '璁垮ID': data.visitorId,
-          '鎻愪氦鏃堕棿': Date.now(), // 姣绾ф椂闂存埑
-          '闅跺睘鍥㈤槦': data.basicInfo.team || '',
-          '钀ヤ笟鎵х収鍚嶇О': data.basicInfo.licenseName || '',
-          '淇＄敤浠ｇ爜': data.basicInfo.licenseCode || '',
-          '娉ㄥ唽鏃ユ湡': getTimestamp(data.basicInfo.licenseDate), // 姣绾ф椂闂存埑
-          '娉曚汉濮撳悕': data.basicInfo.legalName || '',
-          '娉ㄥ唽鍦板潃': data.basicInfo.licenseAddress || '',
-          '甯岄煶璐﹀彿': data.accountInfo.sheinAccount || '',
-          '瀵嗙爜': data.accountInfo.sheinPassword || ''
+          '访客ID': data.visitorId,
+          '提交时间': Date.now(),
+          隶属团队: data.basicInfo.team || '',
+          营业执照名称: data.basicInfo.licenseName || '',
+          信用代码: data.basicInfo.licenseCode || '',
+          注册日期: getTimestamp(data.basicInfo.licenseDate),
+          法人姓名: data.basicInfo.legalName || '',
+          注册地址: data.basicInfo.licenseAddress || '',
+          希音账号: data.accountInfo.sheinAccount || '',
+          密码: data.accountInfo.sheinPassword || ''
         }
       }
       
@@ -234,7 +235,7 @@ export function useSurvey() {
           console.log('Feishu record created successfully')
           console.log('Feishu base link:', FEISHU_BASE_LINK)
         } else {
-          console.error('Failed to create Feishu record:', result.message)
+          console.error('Failed to create Feishu record:', result.error || result.message)
         }
 
         return result.success
